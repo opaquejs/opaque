@@ -1,0 +1,29 @@
+stages: 
+    - build
+    - test
+    - publish
+
+image: node:12
+
+build: 
+    stage: build
+    script: 
+        - npm ci
+        - npm run build
+    artifacts:
+        paths:
+            - node_modules
+            - lib
+
+test:
+    stage: test
+    script: 
+        - npm run test
+
+publish:
+    stage: publish
+    only: 
+        - tags
+    script: 
+        - echo $NPMRC >> .npmrc
+        - npm publish --access public

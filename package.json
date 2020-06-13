@@ -1,0 +1,24 @@
+{
+  "name": "@opaquejs/opaque",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "typescript": "^3.9.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.2.3",
+    "jest": "^26.0.1",
+    "ts-jest": "^26.0.0"
+  },
+  "scripts": {
+    "test": "jest --config jest.config.js",
+    "test-watch": "jest --config jest.config.js --watch",
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "ISC"
+}
