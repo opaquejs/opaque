@@ -1,12 +1,5 @@
 import { attribute, Model } from '../Model'
-import { ReactiveStorageAdapter, } from '../Storage'
-
-class TestStorageAdapter extends ReactiveStorageAdapter {
-    reset() {
-        this.data = []
-        this.last_id = 0
-    }
-}
+import { TestStorageAdapter } from '../index'
 
 class Task extends Model {
     @attribute()
