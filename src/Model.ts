@@ -88,7 +88,7 @@ export abstract class Model {
   }
 
   async save() {
-    this.$attributes.storage = await this.$adapter.insert(this.$attributes.local as any as Attributes)
+    this.$attributes.storage = await this.$adapter.insert({ ...this.$attributes.local, id: this.getAttribute('id')})
     this.$attributes.local = {}
   }
 
@@ -105,14 +105,12 @@ export abstract class Model {
     this.$attributes.storage = null
   }
 
-  static async find<T extends Model>(this: { new (): T }, id: number) {
-    const instance = new this()
-    const attributes = await instance.$adapter.get(id)
+  static async find<T extends Model>(this: { new (): T }, id: number): Promise<T> {
+    const attributes = await (this as any as typeof Model).$adapter.get(id)
     if(attributes == undefined) {
       throw new Error(`Model with id "${id}" was not found`)
     }
-    instance.setAttributes(attributes)
-    return instance
+    return (this as any).fromStorage(attributes)
   }
 
   static async create<T extends Model>(this: { new (): T }, attributes: Partial<Attributes<Attribute>> = {}) {

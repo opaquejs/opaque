@@ -3,8 +3,6 @@ import { TestStorageAdapter } from '../index'
 
 class Task extends Model {
     @attribute()
-    public id: number | null = null
-    @attribute()
     public title: string | null = null
 
     static $adapter = new TestStorageAdapter()
@@ -60,11 +58,11 @@ describe('Model', () => {
         expect(copy.id).toBe(task.id)
     
         copy.title = 'changed'
-        expect(copy.getAttribute('title')).toBe('changed')
-        expect(task.getAttribute('title')).not.toBe('changed')
+        expect(copy.title).toBe('changed')
+        expect(task.title).not.toBe('changed')
     
         await copy.save()
-        expect(task.getAttribute('title')).toBe('changed')
+        expect(task.title).toBe('changed')
     })
     
     test('find', async () => {
