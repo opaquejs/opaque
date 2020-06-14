@@ -1,24 +1,23 @@
 import { attribute, Model } from '../Model'
 import { TestStorageAdapter } from '../index'
 
-class Task extends Model {
+class TestModel extends Model {
+    static adapter: typeof TestStorageAdapter = TestStorageAdapter
+}
+
+class Task extends TestModel {
     @attribute()
     public title: string | null = null
+}
 
-    static $adapter = new TestStorageAdapter()
-
-    static info() {
-        
-    }
-
-    info() {
-        console.log(this.$attributes)
-    }
+class User extends TestModel {
+    @attribute()
+    public email: string = ''
 }
 
 
 beforeEach(() => {
-    Task.$adapter.reset()
+    (Task.$adapter as TestStorageAdapter).reset()
 })
 
 describe('Model', () => {
@@ -130,6 +129,13 @@ describe('Model', () => {
         await first.save()
         expect(query.where('title', '==', 'first').get()).toEqual([ first ])
     
+    })
+
+    test('multiple models', async () => {
+        expect(User.schema).not.toBe(Task.schema)
+
+        await Task.create({ title: 'test', id: 1 })
+        await expect(() => User.find(1)).rejects.toThrow()
     })
 
 })

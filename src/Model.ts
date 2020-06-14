@@ -16,14 +16,29 @@ export abstract class Model {
     storage: null,
   }
 
-  protected static schema: Attributes<null> = { id: null }
+  protected static schemes: Map<typeof Model, Attributes<null>> = new Map()
   protected schema: Attributes<null> = (this.constructor as typeof Model).schema
 
-  static $adapter: ReactiveStorageAdapter = new ThrottledReactiveStorageAdapter()
+  static $adapters: Map<typeof Model, ReactiveStorageAdapter> = new Map()
+  static adapter: typeof ReactiveStorageAdapter = ThrottledReactiveStorageAdapter
   static $query: typeof MappedQuery = MappedQuery
 
   @attribute()
   public id: Attribute = null
+
+  static get schema(): Attributes<null> {
+    if(!this.schemes.has(this)) {
+      this.schemes.set(this, { id: null })
+    }
+    return this.schemes.get(this)!
+  }
+
+  static get $adapter() {
+    if(!this.$adapters.has(this)) {
+      this.$adapters.set(this, new this.adapter)
+    }
+    return this.$adapters.get(this)!
+  }
 
   get $adapter() {
     return (this.constructor as typeof Model).$adapter
