@@ -52,7 +52,7 @@ export abstract class Model {
   //   return new Map(Object.keys(this.schema).map(attribute => [ attribute, this.schema[attribute] ]))
   // }
 
-  constructor() {
+  constructor(...args: any[]) {
     for(const property in this.getAttributes()) {
       Object.defineProperty(this, property, {
         get: () => this.attributes[property],
