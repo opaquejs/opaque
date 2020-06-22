@@ -9,7 +9,7 @@ export function attribute() {
   }
 }
 
-export abstract class Model {
+export class Model {
 
   protected $attributes: { local: Partial<Attributes<null>>, storage: Attributes | null } = {
     local: {},
