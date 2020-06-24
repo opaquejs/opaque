@@ -58,6 +58,7 @@ export class Model {
         get: () => this.attributes[property],
         set: value => this.attributes[property] = value
       })
+      this.setAttribute(property, this.schema[property])
     }
   }
 

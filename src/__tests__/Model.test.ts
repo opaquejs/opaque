@@ -15,6 +15,15 @@ class User extends TestModel {
     public email: string = ''
 }
 
+class JSTask extends TestModel {
+    static get schema() {
+        return {
+            id: null,
+            title: 'default'
+        }
+    }
+}
+
 
 beforeEach(() => {
     (Task.$adapter as TestStorageAdapter).reset()
@@ -42,6 +51,8 @@ describe('Model', () => {
       model.title = 'changed'
       expect(model.title).toBe('changed')
       expect(model.attributes.title).toBe('changed')
+
+      expect((JSTask.make() as any).title).toBe('default')
     })
     
     test('save', async () => {
