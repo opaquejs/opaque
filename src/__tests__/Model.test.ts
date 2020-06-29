@@ -19,8 +19,18 @@ class JSTask extends TestModel {
     static get schema() {
         return {
             id: null,
-            title: 'default'
+            title: 'default',
+            importance: 0,
+            tags: '[]',
         }
+    }
+
+    set importance(value: any) {
+        this.attributes.importance = parseInt(value)
+    }
+
+    get tags() {
+        return JSON.parse(this.attributes.tags as string).map((id: number) => ({ id }))
     }
 }
 
@@ -53,6 +63,16 @@ describe('Model', () => {
       expect(model.attributes.title).toBe('changed')
 
       expect((JSTask.make() as any).title).toBe('default')
+    })
+
+    test('custom getters and setters', async () => {
+        const task = new JSTask() as any
+        task.importance = '1'
+        expect(task.importance).toBe(1)
+
+        expect(task.tags).toEqual([])
+        task.tags = '[1,2]'
+        expect(task.tags).toEqual([ { id: 1 }, { id: 2 } ])
     })
     
     test('save', async () => {

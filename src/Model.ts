@@ -1,5 +1,6 @@
 import { ReactiveStorageAdapter, Attributes, Attribute, ThrottledReactiveStorageAdapter } from './Storage'
 import { MappedQuery } from './Query'
+import { getInheritedPropertyDescriptor } from './util'
 
 export function attribute() {
   return (target: any, key: string) => {
@@ -54,9 +55,10 @@ export class Model {
 
   constructor(...args: any[]) {
     for(const property in this.getAttributes()) {
+      const inherited_descriptor = getInheritedPropertyDescriptor(this, property) || {} as PropertyDescriptor
       Object.defineProperty(this, property, {
-        get: () => this.attributes[property],
-        set: value => this.attributes[property] = value
+        get: inherited_descriptor.get || (() => this.attributes[property]),
+        set: inherited_descriptor.set || (value => this.attributes[property] = value),
       })
       this.setAttribute(property, this.schema[property])
     }
