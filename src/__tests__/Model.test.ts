@@ -65,6 +65,17 @@ describe('Model', () => {
       expect((JSTask.make() as any).title).toBe('default')
     })
 
+    test('$dirty', async () => {
+        const task = new Task()
+        expect(task.$dirty).toBe(true)
+
+        task.title = 'Test'
+        expect(task.$dirty).toBe(true)
+
+        await task.save()
+        expect(task.$dirty).toBe(false)
+    })
+
     test('custom getters and setters', async () => {
         const task = new JSTask() as any
         task.importance = '1'

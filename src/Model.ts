@@ -68,6 +68,10 @@ export class Model {
     return this.attributes.id != undefined
   }
 
+  get $dirty() {
+    return Object.keys(this.$attributes.local).length > 0
+  }
+
   get attributes() {
     const attributes: Attributes | Attributes<null> = { id: null }
     for(const attribute in this.getAttributes()) {
