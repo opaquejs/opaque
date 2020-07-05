@@ -1,6 +1,6 @@
 {
   "name": "@opaquejs/opaque",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "",
   "main": "lib/index.js",
   "directories": {
