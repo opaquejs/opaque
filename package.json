@@ -1,7 +1,7 @@
 {
   "name": "@opaquejs/opaque",
   "version": "0.3.13",
-  "description": "",
+  "description": "A client-side Javascript ORM",
   "main": "lib/index.js",
   "files": [
     "/lib"
@@ -19,6 +19,19 @@
     "test-watch": "jest --config jest.config.js --watch",
     "build": "tsc"
   },
-  "author": "",
-  "license": "ISC"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opaquejs/opaque.git"
+  },
+  "keywords": [
+    "opaquejs",
+    "orm",
+    "api"
+  ],
+  "author": "Sebastian Dittrich",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/opaquejs/opaque/issues"
+  },
+  "homepage": "https://github.com/opaquejs/opaque#readme"
 }
