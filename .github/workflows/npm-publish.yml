@@ -19,6 +19,10 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run test
+      - name: Upload Build Results
+        uses: actions/upload-artifacts@v2
+        with:
+          path: lib/
 
   publish-npm:
     needs: test
@@ -29,8 +33,10 @@ jobs:
         with:
           node-version: 12
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm run build
+      - name: Download Build Results
+        uses: actions/download-artifacts@v2
+        with: 
+          path: lib/
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
