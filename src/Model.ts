@@ -65,7 +65,7 @@ export class Model {
   }
 
   get $persistent() {
-    return this.attributes.id != undefined
+    return this.$attributes.storage != null
   }
 
   get $dirty() {
@@ -115,7 +115,9 @@ export class Model {
   }
 
   reset() {
-    this.$attributes.local = {}
+    for(const key in this.$attributes.local) {
+      delete this.$attributes.local[key]
+    }
     if(!this.$persistent) {
       this.setAttributes(this.schema)
     }
