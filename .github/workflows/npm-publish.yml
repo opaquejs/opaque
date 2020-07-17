@@ -22,6 +22,7 @@ jobs:
       - name: Upload Build Results
         uses: actions/upload-artifact@v2
         with:
+          name: build
           path: lib/
 
   publish-npm:
@@ -36,6 +37,7 @@ jobs:
       - name: Download Build Results
         uses: actions/download-artifact@v2
         with: 
+          name: build
           path: lib/
       - run: npm publish
         env:
