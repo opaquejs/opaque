@@ -3,9 +3,9 @@
   "version": "0.3.12",
   "description": "",
   "main": "lib/index.js",
-  "directories": {
-    "lib": "lib"
-  },
+  "files": [
+    "/lib"
+  ],
   "dependencies": {
     "typescript": "^3.9.5"
   },
