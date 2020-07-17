@@ -111,7 +111,7 @@ export class Model {
 
   async save() {
     this.$attributes.storage = await this.$adapter.insert({ ...this.$attributes.local, id: this.getAttribute('id')})
-    this.$attributes.local = {}
+    this.reset()
   }
 
   reset() {
@@ -123,7 +123,7 @@ export class Model {
 
   async remove() {
     await this.$adapter.remove(this.getAttribute('id'))
-    this.$attributes.local = { ...this.getAttributes(), id: null }
+    this.setAttributes({ ...this.getAttributes(), id: null })
     this.$attributes.storage = null
   }
 
