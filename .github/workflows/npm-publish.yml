@@ -21,7 +21,10 @@ jobs:
       - name: Upload Build Results
         uses: actions/upload-artifact@v2
         with: 
-          path: lib/
+          path: |
+            lib/
+            node_modules/
+          name: build
 
   test:
     needs: build
@@ -34,7 +37,7 @@ jobs:
       - name: Download Build Results
         uses: actions/download-artifact@v2
         with: 
-          path: lib/
+          name: build
       - run: npm run test
 
   publish-npm:
@@ -49,7 +52,7 @@ jobs:
       - name: Download Build Results
         uses: actions/download-artifact@v2
         with: 
-          path: lib/
+          name: build
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
@@ -66,7 +69,7 @@ jobs:
       - name: Download Build Results
         uses: actions/download-artifact@v2
         with: 
-          path: lib/
+          name: build
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
