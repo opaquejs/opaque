@@ -9,23 +9,6 @@ on:
       - 'v*'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12
-      - run: npm ci
-      - run: npm run build
-      - name: Upload Build Results
-        uses: actions/upload-artifact@v2
-        with: 
-          path: |
-            lib/
-            node_modules/
-          name: build
-
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -34,10 +17,8 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12
-      - name: Download Build Results
-        uses: actions/download-artifact@v2
-        with: 
-          name: build
+      - run: npm ci
+      - run: npm run build
       - run: npm run test
 
   publish-npm:
@@ -49,27 +30,8 @@ jobs:
         with:
           node-version: 12
           registry-url: https://registry.npmjs.org/
-      - name: Download Build Results
-        uses: actions/download-artifact@v2
-        with: 
-          name: build
+      - run: npm ci
+      - run: npm run build
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
-
-  publish-gpr:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12
-          registry-url: https://npm.pkg.github.com/
-      - name: Download Build Results
-        uses: actions/download-artifact@v2
-        with: 
-          name: build
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
