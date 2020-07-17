@@ -20,7 +20,7 @@ jobs:
       - run: npm run build
       - run: npm run test
       - name: Upload Build Results
-        uses: actions/upload-artifacts@v2
+        uses: actions/upload-artifact@v2
         with:
           path: lib/
 
@@ -34,7 +34,7 @@ jobs:
           node-version: 12
           registry-url: https://registry.npmjs.org/
       - name: Download Build Results
-        uses: actions/download-artifacts@v2
+        uses: actions/download-artifact@v2
         with: 
           path: lib/
       - run: npm publish
