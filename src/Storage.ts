@@ -1,6 +1,8 @@
 import { Refreshes, Refreshable } from './Query'
 
 export abstract class StorageAdapter {
+    constructor(...args: any[]) {}
+
     public abstract all(): Array<Attributes>
     public abstract insert(document: Attributes): Promise<Attributes>
     public abstract get(id: number): Promise<Attributes>
