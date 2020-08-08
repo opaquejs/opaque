@@ -1,7 +1,7 @@
 import { Refreshes, Refreshable } from './Query'
 
-export abstract class StorageAdapter {
-    constructor(...args: any[]) {}
+export abstract class Storage {
+    constructor(...args: any[]) { }
 
     public abstract all(): Array<Attributes>
     public abstract insert(document: Attributes): Promise<Attributes>
@@ -18,11 +18,10 @@ export type Attribute = string | number | null
 export interface Attributes<T extends Attribute = number> extends Identifiable<T> {
     [attribute: string]: Attribute
 }
-  
-export class IdentifiableStorageAdapter implements StorageAdapter {
+
+export class IdentifiableStorage implements Storage {
 
     protected data: Attributes[] = []
-    protected last_id: number = 0
 
     all() {
         return this.data
@@ -30,12 +29,12 @@ export class IdentifiableStorageAdapter implements StorageAdapter {
 
     async insert(document: Attributes) {
         const found = this.data.filter(({ id }) => id === document.id)[0]
-        if(found == undefined) {
+        if (found == undefined) {
             this.data.push({ ...document })
             return await this.get(document.id)
         } else {
-            for(const attribute in document) {
-                if(!([ 'id' ].includes(attribute))) {
+            for (const attribute in document) {
+                if (!(['id'].includes(attribute))) {
                     found[attribute] = document[attribute]
                 }
             }
@@ -49,17 +48,17 @@ export class IdentifiableStorageAdapter implements StorageAdapter {
 
     async remove(id: number) {
         const found = await this.get(id)
-        if(found != undefined) {
+        if (found != undefined) {
             this.data.splice(this.data.indexOf(found), 1)
         }
     }
 }
 
-export class ReactiveStorageAdapter extends IdentifiableStorageAdapter implements Refreshes {
+export class ReactiveStorage extends IdentifiableStorage implements Refreshes {
     public refreshables: Array<Refreshable> = []
 
     refresh() {
-        for(const refreshable of this.refreshables) {
+        for (const refreshable of this.refreshables) {
             refreshable.refresh()
         }
     }
@@ -77,11 +76,11 @@ export class ReactiveStorageAdapter extends IdentifiableStorageAdapter implement
     }
 }
 
-export class ThrottledReactiveStorageAdapter extends ReactiveStorageAdapter {
+export class ThrottledReactiveStorage extends ReactiveStorage {
     protected refresh_planned: boolean = false
 
     refresh() {
-        if(!this.refresh_planned) {
+        if (!this.refresh_planned) {
             this.refresh_planned = true
             setTimeout(() => {
                 this.refresh_planned = false
