@@ -1,6 +1,7 @@
-import { ReactiveStorage } from './Storage'
+import { IdentifiableObjectStorage } from './Storage'
+import refreshableStorage from './refreshableStorage'
 
-export class TestStorage extends ReactiveStorage {
+export class TestStorage extends refreshableStorage(IdentifiableObjectStorage) {
     reset() {
         this.data = []
     }

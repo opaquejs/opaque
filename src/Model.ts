@@ -1,6 +1,8 @@
-import { ReactiveStorage, Attributes, Attribute, ThrottledReactiveStorage } from './Storage'
+import { Attributes, Attribute, IdentifiableObjectStorage, Storage } from './Storage'
 import { MappedQuery } from './Query'
-import { getInheritedPropertyDescriptor } from './util'
+import { getInheritedPropertyDescriptor, Constructor } from './util'
+import throttled from './throttled'
+import refreshableStorage from './refreshableStorage'
 
 export function attribute() {
   return (target: any, key: string) => {
@@ -20,8 +22,8 @@ export class Model {
   protected static schemes: Map<typeof Model, Attributes<null>> = new Map()
   protected schema: Attributes<null> = (this.constructor as typeof Model).schema
 
-  static $storages: Map<typeof Model, ReactiveStorage> = new Map()
-  static storage: typeof ReactiveStorage = ThrottledReactiveStorage
+  static $storages: Map<typeof Model, Storage> = new Map()
+  static storage: Constructor<Storage> = throttled(refreshableStorage(IdentifiableObjectStorage))
   static $query: typeof MappedQuery = MappedQuery
 
   @attribute()
@@ -36,7 +38,7 @@ export class Model {
 
   static get $storage() {
     if (!this.$storages.has(this)) {
-      this.$storages.set(this, new this.storage)
+      this.$storages.set(this, new this.storage(this))
     }
     return this.$storages.get(this)!
   }
@@ -109,8 +111,8 @@ export class Model {
     this.schema[key] = value
   }
 
-  async save({ data = {} }: { data?: Partial<Attributes<null>> } = {}) {
-    this.$attributes.storage = await this.$storage.insert({ ...this.$attributes.local, ...data, id: this.getAttribute('id') })
+  async save() {
+    this.$attributes.storage = await this.$storage.insert({ ...this.$attributes.local, id: this.getAttribute('id') })
     this.reset()
   }
 

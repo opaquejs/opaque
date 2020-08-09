@@ -1,12 +1,11 @@
-import { Refreshes, Refreshable } from './Query'
+import refreshableStorage from "./refreshableStorage"
+import throttled from "./throttled"
 
-export abstract class Storage {
-    constructor(...args: any[]) { }
-
-    public abstract all(): Array<Attributes>
-    public abstract insert(document: Attributes): Promise<Attributes>
-    public abstract get(id: number): Promise<Attributes>
-    public abstract remove(id: number): Promise<void>
+export interface Storage {
+    all(): Array<Attributes>
+    insert(document: Attributes): Promise<Attributes>
+    get(id: number): Promise<Attributes>
+    remove(id: number): Promise<void>
 }
 
 export interface Identifiable<T extends Attribute> {
@@ -19,9 +18,13 @@ export interface Attributes<T extends Attribute = number> extends Identifiable<T
     [attribute: string]: Attribute
 }
 
-export class IdentifiableStorage implements Storage {
+export class IdentifiableObjectStorage implements Storage {
 
     protected data: Attributes[] = []
+
+    constructor(...args: any[]) {
+
+    }
 
     all() {
         return this.data
@@ -54,38 +57,8 @@ export class IdentifiableStorage implements Storage {
     }
 }
 
-export class ReactiveStorage extends IdentifiableStorage implements Refreshes {
-    public refreshables: Array<Refreshable> = []
 
-    refresh() {
-        for (const refreshable of this.refreshables) {
-            refreshable.refresh()
-        }
-    }
-
-    async insert(document: Attributes) {
-        const result = await super.insert(document)
-        this.refresh()
-        return result
-    }
-
-    async remove(id: number) {
-        const result = await super.remove(id)
-        this.refresh()
-        return result
-    }
-}
-
-export class ThrottledReactiveStorage extends ReactiveStorage {
-    protected refresh_planned: boolean = false
-
-    refresh() {
-        if (!this.refresh_planned) {
-            this.refresh_planned = true
-            setTimeout(() => {
-                this.refresh_planned = false
-                super.refresh()
-            }, 0)
-        }
-    }
+export {
+    refreshableStorage,
+    throttled,
 }
