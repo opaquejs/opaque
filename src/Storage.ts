@@ -2,6 +2,7 @@ import refreshableStorage from "./refreshableStorage"
 import throttled from "./throttled"
 
 export interface Storage {
+    replace(data: Array<Attributes>): void
     all(): Array<Attributes>
     insert(document: Attributes): Promise<Attributes>
     get(id: number): Promise<Attributes>
@@ -24,6 +25,10 @@ export class IdentifiableObjectStorage implements Storage {
 
     constructor(...args: any[]) {
 
+    }
+
+    replace(data: Attributes[]) {
+        this.data = data
     }
 
     all() {

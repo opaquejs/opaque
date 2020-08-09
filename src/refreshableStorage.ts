@@ -1,8 +1,8 @@
-import { IdentifiableObjectStorage, Attributes } from "./Storage"
+import { IdentifiableObjectStorage, Attributes, Storage } from "./Storage"
 import { Refreshable, Refreshes } from "./Query"
 import { Constructor } from "./util"
 
-export default <T extends Constructor<IdentifiableObjectStorage>>(base: T) => class RefreshableStorage extends base implements Refreshes {
+export default <T extends Constructor<Storage>>(base: T) => class RefreshableStorage extends base implements Refreshes {
     public refreshables: Array<Refreshable> = []
 
     refresh() {
