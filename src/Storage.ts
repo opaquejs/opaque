@@ -1,5 +1,6 @@
 import refreshableStorage from "./refreshableStorage"
 import throttled from "./throttled"
+import { Model } from "./Model"
 
 export interface Storage {
     replace(data: Array<Attributes>): void
@@ -22,9 +23,10 @@ export interface Attributes<T extends Attribute = number> extends Identifiable<T
 export class IdentifiableObjectStorage implements Storage {
 
     protected data: Attributes[] = []
+    protected name: string
 
-    constructor(...args: any[]) {
-
+    constructor({ name }: { name: string }) {
+        this.name = name
     }
 
     replace(data: Attributes[]) {
