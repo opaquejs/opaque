@@ -23,7 +23,7 @@ export class Model {
   protected schema: Attributes<null> = (this.constructor as typeof Model).schema
 
   static $storages: Map<typeof Model, Storage> = new Map()
-  static storage: Constructor<Storage> = throttled(refreshableStorage(IdentifiableObjectStorage))
+  static storage: Constructor<IdentifiableObjectStorage> = throttled(refreshableStorage(IdentifiableObjectStorage))
   static $query: typeof MappedQuery = MappedQuery
 
   @attribute()
