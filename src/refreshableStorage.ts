@@ -1,4 +1,4 @@
-import { IdentifiableObjectStorage, Attributes, Storage } from "./Storage"
+import { Attributes, Storage, Attribute } from "./Storage"
 import { Refreshable, Refreshes } from "./Query"
 import { Constructor } from "./util"
 
@@ -19,6 +19,12 @@ export default <T extends Constructor<Storage>>(base: T) => class RefreshableSto
 
     async remove(id: number) {
         const result = await super.remove(id)
+        this.refresh()
+        return result
+    }
+    
+    async replace(data: Attributes<number>[]): Promise<void> {
+        const result = await super.replace(data)
         this.refresh()
         return result
     }
