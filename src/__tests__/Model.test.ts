@@ -57,7 +57,6 @@ describe('Model', () => {
 
         expect(model.getAttributes()).toEqual({ id: null, title: 'neuer' })
 
-
         model.title = 'changed'
         expect(model.title).toBe('changed')
         expect(model.attributes.title).toBe('changed')

@@ -62,7 +62,6 @@ export class Model {
         get: inherited_descriptor.get || (() => this.attributes[property]),
         set: inherited_descriptor.set || (value => this.attributes[property] = value),
       })
-      this.setAttribute(property, this.schema[property])
     }
   }
 
@@ -93,8 +92,17 @@ export class Model {
     return attributes
   }
 
-  getAttribute<T extends Attributes, K extends keyof T>(attribute: K): T[K] {
-    return attribute in this.$attributes.local ? (this.$attributes.local as any)[attribute] : this.$attributes.storage ? (this.$attributes.storage as any)[attribute] : null as any
+  getAttribute<T extends Attributes, K extends keyof T>(attribute: K): T[K] | null {
+    if(attribute in this.$attributes.local) {
+      return (this.$attributes.local as any)[attribute]
+    }
+    if(this.$attributes.storage && attribute in this.$attributes.storage) {
+      return (this.$attributes.storage as any)[attribute]
+    }
+    if(attribute in this.schema) {
+      return (this.schema as any)[attribute]
+    }
+    return null
   }
 
   setAttribute(attribute: string, value: any) {
@@ -112,7 +120,7 @@ export class Model {
   }
 
   async save() {
-    this.$attributes.storage = await this.$storage.insert({ ...this.$attributes.local, id: this.getAttribute('id') })
+    this.$attributes.storage = await this.$storage.insert({ ...this.$attributes.local, id: this.getAttribute('id')! })
     this.reset()
   }
 
@@ -120,15 +128,14 @@ export class Model {
     for (const key in this.$attributes.local) {
       delete this.$attributes.local[key]
     }
-    if (!this.$persistent) {
-      this.setAttributes(this.schema)
-    }
   }
 
   async remove() {
-    await this.$storage.remove(this.getAttribute('id'))
-    this.setAttributes({ ...this.getAttributes(), id: null })
-    this.$attributes.storage = null
+    if(this.$persistent) {
+      await this.$storage.remove(this.getAttribute('id')!)
+      this.setAttributes({ ...this.getAttributes(), id: null })
+      this.$attributes.storage = null
+    }
   }
 
   static async find<T extends Model>(this: { new(): T }, id: number): Promise<T> {
