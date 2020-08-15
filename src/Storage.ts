@@ -10,6 +10,10 @@ export interface Storage {
     remove(id: number): Promise<void>
 }
 
+export interface HasSerializable<T> {
+    serializable(): T
+}
+
 export interface Identifiable<T extends Attribute> {
     id: T
 }
@@ -20,7 +24,7 @@ export interface Attributes<T extends Attribute = number> extends Identifiable<T
     [attribute: string]: Attribute
 }
 
-export class IdentifiableObjectStorage implements Storage {
+export class IdentifiableObjectStorage implements Storage, HasSerializable<Attributes<number>[]> {
 
     protected data: Attributes[] = []
     protected name: string
@@ -61,6 +65,10 @@ export class IdentifiableObjectStorage implements Storage {
         if (found != undefined) {
             this.data.splice(this.data.indexOf(found), 1)
         }
+    }
+
+    serializable() {
+        return this.all()
     }
 }
 
