@@ -1,5 +1,5 @@
 import { Attributes, Attribute, IdentifiableObjectStorage, Storage } from './Storage'
-import { MappedQuery } from './Query'
+import { MappedQuery, Refreshable } from './Query'
 import { getInheritedPropertyDescriptor, Constructor } from './util'
 import throttled from './throttled'
 import refreshableStorage from './refreshableStorage'
@@ -23,7 +23,7 @@ export class Model {
   protected schema: Attributes<null> = (this.constructor as typeof Model).schema
 
   static $storages: Map<typeof Model, Storage> = new Map()
-  static storage: Constructor<IdentifiableObjectStorage> = throttled(refreshableStorage(IdentifiableObjectStorage))
+  static storage: Constructor<Storage & Refreshable> = throttled(refreshableStorage(IdentifiableObjectStorage))
   static $query: typeof MappedQuery = MappedQuery
 
   @attribute()
