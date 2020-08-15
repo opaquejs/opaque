@@ -10,10 +10,6 @@ export interface Storage {
     remove(id: number): Promise<void>
 }
 
-export interface HasSerializable<T> {
-    serializable(): T
-}
-
 export interface Identifiable<T extends Attribute> {
     id: T
 }
@@ -24,7 +20,7 @@ export interface Attributes<T extends Attribute = number> extends Identifiable<T
     [attribute: string]: Attribute
 }
 
-export class IdentifiableObjectStorage implements Storage, HasSerializable<Attributes<number>[]> {
+export class IdentifiableObjectStorage implements Storage {
 
     protected data: Attributes[] = []
     protected name: string
@@ -42,9 +38,9 @@ export class IdentifiableObjectStorage implements Storage, HasSerializable<Attri
     }
 
     async insert(document: Attributes) {
-        const found = this.data.filter(({ id }) => id === document.id)[0]
+        const found = this.all().filter(({ id }) => id === document.id)[0]
         if (found == undefined) {
-            this.data.push({ ...document })
+            this.all().push({ ...document })
             return await this.get(document.id)
         } else {
             for (const attribute in document) {
@@ -57,18 +53,14 @@ export class IdentifiableObjectStorage implements Storage, HasSerializable<Attri
     }
 
     async get(id: number) {
-        return this.data.filter(({ id: current }) => id === current)[0]
+        return this.all().filter(({ id: current }) => id === current)[0]
     }
 
     async remove(id: number) {
         const found = await this.get(id)
         if (found != undefined) {
-            this.data.splice(this.data.indexOf(found), 1)
+            this.all().splice(this.all().indexOf(found), 1)
         }
-    }
-
-    serializable() {
-        return this.all()
     }
 }
 
