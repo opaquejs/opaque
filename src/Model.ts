@@ -119,14 +119,34 @@ export class Model {
     this.schema[key] = value
   }
 
-  async save() {
-    this.$attributes.storage = await this.$storage.insert({ ...this.$attributes.local, id: this.getAttribute('id')! })
-    this.reset()
+  async saveAttributes<T extends Model, K extends Attribute>(this: T, attributes: Partial<Attributes<K>>): Promise<void> {
+    this.$attributes.storage = await this.$storage.insert({ ...attributes, id: this.getAttribute('id')! })
+    this.resetOnly(Object.keys(attributes) as (keyof T)[])
   }
 
-  reset() {
+  async saveOnly(attributes: (keyof Attributes)[]): Promise<void> {
+    const to_save: Partial<Attributes> = {}
+
+    for(const attribute of attributes) {
+      to_save[attribute] = this.$attributes.local[attribute]
+    }
+
+    return await this.saveAttributes(to_save)
+  }
+
+  async save(): Promise<void> {
+    return await this.saveAttributes(this.$attributes.local)
+  }
+
+  resetAll(): void {
     for (const key in this.$attributes.local) {
       delete this.$attributes.local[key]
+    }
+  }
+
+  resetOnly<T extends Model, K extends keyof T>(this: T, attributes: Array<K>): void {
+    for (const key of attributes) {
+      delete this.$attributes.local[key as any]
     }
   }
 
@@ -157,7 +177,7 @@ export class Model {
   static fromStorage<T extends Model>(this: { new(): T }, attributes: Attributes): T {
     const instance = new this()
     instance.$attributes.storage = attributes
-    instance.reset()
+    instance.resetAll()
     return instance
   }
 

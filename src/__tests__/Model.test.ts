@@ -105,6 +105,33 @@ describe('Model', () => {
         expect(task.title).toBe('changed')
     })
 
+    test('partial save', async () => {
+        class ExtendedTask extends TestModel {
+            @attribute()
+            public title: string | null = null
+
+            @attribute()
+            public description: string = ''
+        }
+
+        const task = await ExtendedTask.create({ id: 1, title: 'default' })
+        const copy = await ExtendedTask.find(1)
+
+        task.title = 'my new title'
+        task.description = 'my new description'
+        await task.saveOnly([ 'title' ])
+        expect(task.title).toBe('my new title')
+        expect(task.description).toBe('my new description')
+        expect(copy.title).toBe('my new title')
+        expect(copy.description).toBe('')
+        
+        await task.saveAttributes({ title: 'my newer title' })
+        expect(task.title).toBe('my newer title')
+        expect(task.description).toBe('my new description')
+        expect(copy.title).toBe('my newer title')
+        expect(copy.description).toBe('')
+    })
+
     test('find', async () => {
         const task = await Task.create({ title: 'task', id: 1 })
 
@@ -119,7 +146,7 @@ describe('Model', () => {
     test('reset', async () => {
         const task = new Task()
         task.title = 'task'
-        task.reset()
+        task.resetAll()
         expect(task.title).toBe(null)
 
         task.title = 'task'
@@ -127,7 +154,7 @@ describe('Model', () => {
         await task.save()
 
         task.title = 'something'
-        task.reset()
+        task.resetAll()
         expect(task.title).toBe('task')
     })
 
