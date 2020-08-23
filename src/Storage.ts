@@ -59,7 +59,10 @@ export class IdentifiableObjectStorage implements Storage {
     async remove(id: number) {
         const found = await this.get(id)
         if (found != undefined) {
-            this.all().splice(this.all().indexOf(found), 1)
+            const index = this.all().indexOf(found)
+            if(index != -1) {
+                this.all().splice(index, 1)
+            }
         }
     }
 }
