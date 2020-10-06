@@ -1,5 +1,8 @@
 import { OpaqueModel } from "./Model";
 
 export interface OpaqueQuery<Model extends typeof OpaqueModel> {
-    get(): Promise<Array<InstanceType<Model>>>
+    fetch(): Promise<this>
+    get(): Array<InstanceType<Model>>
+    first(): InstanceType<Model>
+    where(attribute: string, operator: any, value: any): this
 }

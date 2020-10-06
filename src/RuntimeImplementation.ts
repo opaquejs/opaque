@@ -1,24 +1,32 @@
 import { IdType, ModelAttributes } from "./Contracts"
-import { OpaqueModel, attribute } from "./Model"
+import { OpaqueModel } from "./Model"
 import { OpaqueQuery } from "./Query"
 import { OpaqueAdapter } from "./Adapter"
 import { v4 } from "uuid"
 import { Constructor } from "./util"
 
 export class RuntimeOpaqueQuery<Model extends typeof OpaqueModel> implements OpaqueQuery<Model> {
+    public filters = {
+        '==': (attribute: any) => (value: any) => (attributes: any) => attributes[attribute] == value,
+    }
+
     constructor(public model: Model, public storage: ModelAttributes<InstanceType<Model>>[]) {
     }
 
-    async first(): Promise<InstanceType<Model>> {
+    first(): InstanceType<Model> {
         return this.model.$fromStorage(this.storage[0])
     }
 
-    where<Attribute extends keyof ModelAttributes<InstanceType<Model>>>(attribute: Attribute, value: InstanceType<Model>[Attribute]) {
-        return new (this.constructor as typeof RuntimeOpaqueQuery)(this.model, this.storage.filter(attributes => attributes[attribute] == value))
+    where<Attribute extends keyof ModelAttributes<InstanceType<Model>>>(attribute: Attribute, operator: keyof this['filters'], value: InstanceType<Model>[Attribute]): this {
+        return new (this.constructor as typeof RuntimeOpaqueQuery)(this.model, this.storage.filter((this.filters as any)[operator](attribute)(value))) as this
     }
 
-    async get() {
+    get() {
         return this.storage.map(data => this.model.$fromStorage(data))
+    }
+
+    async fetch() {
+        return this
     }
 }
 
