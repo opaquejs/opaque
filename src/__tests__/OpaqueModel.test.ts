@@ -130,7 +130,7 @@ describe('adapter', () => {
         model.id = 'test'
         model.save()
 
-        const result = await Model.query().where('id', '==', 'test').first()
+        const result = await Model.query().where('id', '==', 'test').first()!
         expect(result).toBeInstanceOf(OpaqueModel)
         expect(result.id).toBe('test')
     })
@@ -142,7 +142,7 @@ describe('adapter', () => {
         task.id = '1'
         task.title = 'default'
         await task.save()
-        const copy = await Model.query().where('id', '==', '1').first()
+        const copy = await Model.query().where('id', '==', '1').first()!
 
         task.title = 'my new title'
         task.description = 'my new description'

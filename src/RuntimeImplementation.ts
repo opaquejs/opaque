@@ -13,8 +13,8 @@ export class RuntimeOpaqueQuery<Model extends typeof OpaqueModel> implements Opa
     constructor(public model: Model, public storage: ModelAttributes<InstanceType<Model>>[]) {
     }
 
-    first(): InstanceType<Model> {
-        return this.model.$fromStorage(this.storage[0])
+    first(): InstanceType<Model> | undefined {
+        return this.storage[0] ? this.model.$fromStorage(this.storage[0]) : undefined
     }
 
     where<Attribute extends keyof ModelAttributes<InstanceType<Model>>>(attribute: Attribute, operator: keyof this['filters'], value: InstanceType<Model>[Attribute]): this {
