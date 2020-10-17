@@ -83,7 +83,7 @@ export class OpaqueModel {
     }
 
     get $primaryKeyValue(): any {
-        return this.$getAttribute((this.constructor as typeof OpaqueModel).primaryKey as this[Exclude<any, '$primaryKeyValue'>])
+        return this.$getAttribute((this.constructor as typeof OpaqueModel).primaryKey as any)
     }
 
     $getAttributes(): ModelAttributes<this> {
