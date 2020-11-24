@@ -1,6 +1,7 @@
 import { OpaqueModel, attribute } from "../Model"
 import { ModelAttributes } from "../Contracts"
-import { RuntimeOpaqueAdapter, RuntimeOpaqueQuery, runtime } from "../RuntimeImplementation"
+import { RuntimeOpaqueAdapter, runtime } from "../RuntimeImplementation"
+import { Comparison, Comparisons } from "../QueryBuilder"
 
 const expectAttribute = <M extends OpaqueModel>(model: M) => <T extends NonNullable<keyof ModelAttributes<M>>>(attribute: T, value: M[T]) => {
     expect(model.$getAttributes()[attribute]).toBe(value)
@@ -91,8 +92,7 @@ describe('attributes', () => {
 
 describe('adapter', () => {
     const modelGenerator = () => {
-        class Model extends OpaqueModel {
-            static $adapterConstructor = RuntimeOpaqueAdapter
+        class Model extends runtime(OpaqueModel) {
 
             @attribute()
             id?: string = undefined
@@ -102,10 +102,6 @@ describe('adapter', () => {
 
             @attribute()
             description: string = ''
-
-            static query<Model extends typeof OpaqueModel>(this: Model) {
-                return super.query() as RuntimeOpaqueQuery<Model>
-            }
         }
         return Model
     }
@@ -127,12 +123,12 @@ describe('adapter', () => {
         const Model = modelGenerator()
 
         const model = new Model()
-        model.id = 'test'
+        model.title = 'test'
         model.save()
 
-        const result = await Model.query().where('id', '==', 'test').first()!
+        const result = await Model.query().where('title', Comparison.$eq, 'test').first()!
         expect(result).toBeInstanceOf(OpaqueModel)
-        expect(result.id).toBe('test')
+        expect(result.title).toBe('test')
     })
 
     test('partial save', async () => {
@@ -142,7 +138,7 @@ describe('adapter', () => {
         task.id = '1'
         task.title = 'default'
         await task.save()
-        const copy = await Model.query().where('id', '==', '1').first()!
+        const copy = await Model.query().where('id', Comparison.$eq, '1').first()!
 
         task.title = 'my new title'
         task.description = 'my new description'

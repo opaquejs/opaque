@@ -1,6 +1,7 @@
 import { getInheritedPropertyDescriptor } from "./util"
 import { AttributeOptions, AttributeObjects, ModelAttributes, GetAttributeOptions, SetAttributeOptions } from "./Contracts"
 import { OpaqueAdapter, OpaqueAdapterConstructor } from "./Adapter"
+import QueryBuilder from "./QueryBuilder"
 
 export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
     const constructor = model.constructor as typeof OpaqueModel
@@ -54,8 +55,8 @@ export class OpaqueModel {
         return model
     }
 
-    static query() {
-        return this.$adapter.query()
+    static query<Model extends typeof OpaqueModel>(this: Model) {
+        return new QueryBuilder(this)
     }
 
     constructor() {
@@ -155,7 +156,7 @@ export class OpaqueModel {
         if (this.$isPersistent) {
             await this.$adapter.update(this.$primaryKeyValue, toInsert)
         } else {
-            this.$setStorage(await this.$adapter.get(await this.$adapter.insert(toInsert)))
+            this.$setStorage(await this.$adapter.create(toInsert))
         }
         this.$resetOnly(attributes)
     }

@@ -1,13 +1,12 @@
 import { OpaqueModel } from "./Model";
-import { OpaqueQuery } from "./Query";
 import { IdType, ModelAttributes } from "./Contracts";
+import { RootQuery } from "./QueryBuilder";
 
 export interface OpaqueAdapter<Model extends typeof OpaqueModel> {
-    delete(id: IdType): Promise<void>
-    insert(data: ModelAttributes<InstanceType<Model>>): Promise<IdType>
-    update(id: IdType, data: Partial<ModelAttributes<InstanceType<Model>>>): Promise<void>
-    get(id: IdType): Promise<ModelAttributes<InstanceType<Model>>>
-    query(): OpaqueQuery<Model>
+    create(model: ModelAttributes<InstanceType<Model>>): Promise<ModelAttributes<InstanceType<Model>>>
+    read(query: RootQuery<ModelAttributes<InstanceType<Model>>>): Promise<ModelAttributes<InstanceType<Model>>[]>
+    update(query: RootQuery<ModelAttributes<InstanceType<Model>>>, data: Partial<ModelAttributes<InstanceType<Model>>>): Promise<void>
+    delete(query: RootQuery<ModelAttributes<InstanceType<Model>>>): Promise<void>
 }
 
 export interface OpaqueAdapterConstructor<Model extends typeof OpaqueModel> {

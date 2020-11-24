@@ -1,34 +1,9 @@
 import { IdType, ModelAttributes } from "./Contracts"
 import { OpaqueModel } from "./Model"
-import { OpaqueQuery } from "./Query"
 import { OpaqueAdapter } from "./Adapter"
 import { v4 } from "uuid"
 import { Constructor } from "./util"
-
-export class RuntimeOpaqueQuery<Model extends typeof OpaqueModel> implements OpaqueQuery<Model> {
-    public filters = {
-        '==': (attribute: any) => (value: any) => (attributes: any) => attributes[attribute] == value,
-    }
-
-    constructor(public model: Model, public storage: ModelAttributes<InstanceType<Model>>[]) {
-    }
-
-    first(): InstanceType<Model> | undefined {
-        return this.storage[0] ? this.model.$fromStorage(this.storage[0]) : undefined
-    }
-
-    where<Attribute extends keyof ModelAttributes<InstanceType<Model>>>(attribute: Attribute, operator: keyof this['filters'], value: InstanceType<Model>[Attribute]): this {
-        return new (this.constructor as typeof RuntimeOpaqueQuery)(this.model, this.storage.filter((this.filters as any)[operator](attribute)(value))) as this
-    }
-
-    get() {
-        return this.storage.map(data => this.model.$fromStorage(data))
-    }
-
-    async fetch() {
-        return this
-    }
-}
+import { RootQuery, queryCollection } from "./QueryBuilder"
 
 export class RuntimeOpaqueAdapter<Model extends typeof OpaqueModel> implements OpaqueAdapter<Model> {
     storage: Map<IdType, ModelAttributes<InstanceType<Model>>> = new Map()
@@ -36,36 +11,32 @@ export class RuntimeOpaqueAdapter<Model extends typeof OpaqueModel> implements O
     constructor(public model: Model) {
     }
 
-    async delete(id: IdType) {
-        this.storage.delete(id)
-    }
-
-    async insert(data: ModelAttributes<InstanceType<Model>>) {
-        const id = data[this.model.primaryKey as keyof ModelAttributes<InstanceType<Model>>] as IdType || v4()
-        this.storage.set(id, { ...data, [this.model.primaryKey]: id })
-        return id
-    }
-
-    async update(id: IdType, data: ModelAttributes<InstanceType<Model>>) {
-        const previous = this.storage.get(id)
-        for (const key in data) {
-            (previous as any)[key] = (data as any)[key] as any
+    async delete(query: RootQuery<ModelAttributes<InstanceType<Model>>>) {
+        for (const { [this.model.primaryKey as keyof ModelAttributes<InstanceType<Model>>]: id } of queryCollection([...this.storage.values()], query)) {
+            this.storage.delete(id as IdType)
         }
     }
 
-    async get(id: IdType) {
-        return this.storage.get(id) || (() => { throw new Error(`Model "${this.model.name}" with id "${id} not found."`) })()
+    async create(data: ModelAttributes<InstanceType<Model>>) {
+        const obj = { ...data, [this.model.primaryKey]: v4() }
+        this.storage.set(obj[this.model.primaryKey], obj)
+        return obj
     }
 
-    query() {
-        return new RuntimeOpaqueQuery(this.model, [...this.storage.values()])
+    async update(query: RootQuery<ModelAttributes<InstanceType<Model>>>, data: ModelAttributes<InstanceType<Model>>) {
+        for (const { [this.model.primaryKey as keyof ModelAttributes<InstanceType<Model>>]: id } of await this.read(query)) {
+            const previous = this.storage.get(id as IdType)
+            for (const key in data) {
+                (previous as any)[key] = (data as any)[key] as any
+            }
+        }
+    }
+
+    async read(query: RootQuery<ModelAttributes<InstanceType<Model>>>) {
+        return queryCollection([...this.storage.values()], query)
     }
 }
 
-export const runtime = <T extends Constructor<OpaqueModel> & { query(): any }>(base: T) => class RuntimeModel extends base {
+export const runtime = <T extends Constructor<OpaqueModel>>(base: T) => class RuntimeModel extends base {
     static $adapterConstructor = RuntimeOpaqueAdapter
-
-    static query<Model extends typeof OpaqueModel>(this: Model) {
-        return super.query() as RuntimeOpaqueQuery<Model>
-    }
 }
