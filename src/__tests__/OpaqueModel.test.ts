@@ -126,7 +126,7 @@ describe('adapter', () => {
         model.title = 'test'
         model.save()
 
-        const result = await Model.query().where('title', Comparison.$eq, 'test').first()!
+        const result = (await Model.query().where('title', Comparison.$eq, 'test').first())!
         expect(result).toBeInstanceOf(OpaqueModel)
         expect(result.title).toBe('test')
     })
@@ -137,7 +137,7 @@ describe('adapter', () => {
         const task = new Model()
         task.title = 'default'
         await task.save()
-        const copy = await Model.find(task.id!)!
+        const copy = (await Model.find(task.id!))!
 
         task.title = 'my new title'
         task.description = 'my new description'
