@@ -79,7 +79,7 @@ export default class QueryBuilder<Model extends typeof OpaqueModel> {
         return await this.model.$adapter.delete(this.$query)
     }
 
-    async first() {
+    async first(): Promise<InstanceType<Model> | undefined> {
         return (await this.limit(1).get())[0]
     }
 }
