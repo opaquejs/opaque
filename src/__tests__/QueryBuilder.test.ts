@@ -83,8 +83,8 @@ describe('matchesQuery', () => {
 })
 
 describe('queryCollection', () => {
+    const collection = [{ lel: 'hallo1' }, { lel: 'hallo2' }, { lel: 'hallo3' }]
     test('$limit and $skip', () => {
-        const collection = [{ lel: 'hallo4' }, { lel: 'hallo4' }, { lel: 'hallo4' }]
         expect(queryCollection(collection, { $limit: 1 })).toHaveLength(1)
         expect(queryCollection(collection, { $limit: 2, $skip: 2 })).toHaveLength(1)
         expect(queryCollection(collection, { $skip: 2 })).toHaveLength(1)
@@ -94,5 +94,11 @@ describe('queryCollection', () => {
         expect(queryCollection(collection, { $limit: -1 })).toHaveLength(0)
         expect(queryCollection(collection, { $limit: Infinity })).toHaveLength(3)
         expect(queryCollection(collection, { $skip: Infinity })).toHaveLength(0)
+    })
+    test('comparisons', () => {
+        expect(queryCollection(collection, { lel: 'hallo1' })).toHaveLength(1)
+        expect(queryCollection(collection, { lel: 'hallo2' })).toHaveLength(1)
+        expect(queryCollection(collection, { lel: 'hallo3' })).toHaveLength(1)
+        expect(queryCollection(collection, { lel: { $ne: 'hallo3' } })).toHaveLength(2)
     })
 })

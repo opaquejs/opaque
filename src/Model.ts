@@ -1,7 +1,7 @@
 import { getInheritedPropertyDescriptor } from "./util"
 import { AttributeOptions, AttributeObjects, ModelAttributes, GetAttributeOptions, SetAttributeOptions } from "./Contracts"
 import { OpaqueAdapter, OpaqueAdapterConstructor } from "./Adapter"
-import QueryBuilder from "./QueryBuilder"
+import QueryBuilder, { Comparison } from "./QueryBuilder"
 
 export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
     const constructor = model.constructor as typeof OpaqueModel
@@ -57,6 +57,10 @@ export class OpaqueModel {
 
     static query<Model extends typeof OpaqueModel>(this: Model) {
         return new QueryBuilder(this)
+    }
+
+    static async find<Model extends typeof OpaqueModel>(this: Model, key: Model["primaryKey"]) {
+        return await this.query().where(this.primaryKey as any, Comparison.$eq, key).first()
     }
 
     constructor() {
@@ -147,6 +151,14 @@ export class OpaqueModel {
         this.$attributes.storage = data
     }
 
+    get $ownQuery() {
+        return (this.constructor as typeof OpaqueModel).$queryFor(this.$primaryKeyValue)
+    }
+
+    static $queryFor<T>(id: T) {
+        return { [this.primaryKey]: id }
+    }
+
     async save(): Promise<void> {
         return this.$saveAll()
     }
@@ -154,7 +166,7 @@ export class OpaqueModel {
     async $saveOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>): Promise<void> {
         const toInsert = [...attributes].reduce((toInsert, key) => ({ ...toInsert, [key]: this.$getAttribute(key) }), {})
         if (this.$isPersistent) {
-            await this.$adapter.update(this.$primaryKeyValue, toInsert)
+            await this.$adapter.update(this.$ownQuery, toInsert)
         } else {
             this.$setStorage(await this.$adapter.create(toInsert))
         }

@@ -115,6 +115,7 @@ export const matchesQuery = <T extends Queryable>(object: T, query: Query<T>) =>
 }
 
 export const queryCollection = <T extends Queryable>(collection: T[], query: RootQuery<T>): T[] => {
+    collection = collection.filter(item => matchesQuery(item, query))
     if (query.$skip != undefined) {
         collection = collection.slice(Math.max(0, query.$skip))
     }

@@ -135,10 +135,9 @@ describe('adapter', () => {
         const Model = modelGenerator()
 
         const task = new Model()
-        task.id = '1'
         task.title = 'default'
         await task.save()
-        const copy = await Model.query().where('id', Comparison.$eq, '1').first()!
+        const copy = await Model.find(task.id!)!
 
         task.title = 'my new title'
         task.description = 'my new description'
