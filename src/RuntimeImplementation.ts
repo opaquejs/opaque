@@ -18,7 +18,10 @@ export class RuntimeOpaqueAdapter<Model extends typeof OpaqueModel> implements O
     }
 
     async create(data: ModelAttributes<InstanceType<Model>>) {
-        const obj = { ...data, [this.model.primaryKey]: v4() }
+        const obj = { ...data } as any
+        if (obj[this.model.primaryKey] === undefined) {
+            obj[this.model.primaryKey] = v4()
+        }
         this.storage.set(obj[this.model.primaryKey], obj)
         return obj
     }
