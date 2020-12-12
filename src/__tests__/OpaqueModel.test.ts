@@ -1,16 +1,20 @@
-import { OpaqueModel, attribute } from "../Model"
+import { attribute, OpaqueModel } from "../Model"
 import { ModelAttributes } from "../Contracts"
-import { RuntimeOpaqueAdapter, runtime } from "../RuntimeImplementation"
-import { Comparison, Comparisons } from "../QueryBuilder"
+import { Comparison, RootQuery } from "../QueryBuilder"
+import { OpaqueAdapter, NoOpAdapter } from "../Adapter"
 
-const expectAttribute = <M extends OpaqueModel>(model: M) => <T extends NonNullable<keyof ModelAttributes<M>>>(attribute: T, value: M[T]) => {
+const expectAttribute = <M extends TestModel>(model: M) => <T extends NonNullable<keyof ModelAttributes<M>>>(attribute: T, value: M[T]) => {
     expect(model.$getAttributes()[attribute]).toBe(value)
     expect(model.$getAttribute(attribute)).toBe(value)
     expect(model[attribute]).toBe(value)
 }
 
+class TestModel extends OpaqueModel {
+    static $adapterConstructor = NoOpAdapter
+}
+
 describe('plain js', () => {
-    class Model extends runtime(OpaqueModel) {
+    class Model extends TestModel {
 
     }
     Model.boot()
@@ -22,7 +26,7 @@ describe('plain js', () => {
 })
 
 describe('attributes', () => {
-    class Model extends runtime(OpaqueModel) {
+    class Model extends TestModel {
         @attribute()
         attribute: string = 'default'
 
@@ -36,7 +40,7 @@ describe('attributes', () => {
     })
 
     test('invalid undefined declaration', () => {
-        class InavlidModel extends runtime(OpaqueModel) {
+        class InavlidModel extends TestModel {
             @attribute()
             invalid?: string
         }
@@ -56,7 +60,7 @@ describe('attributes', () => {
     })
 
     test('getter/setter', () => {
-        class Model extends runtime(OpaqueModel) {
+        class Model extends TestModel {
             @attribute<string>({
                 get: value => value + '€',
                 set: value => value.replace('€', '')
@@ -92,7 +96,7 @@ describe('attributes', () => {
 
 describe('adapter', () => {
     const modelGenerator = () => {
-        class Model extends runtime(OpaqueModel) {
+        class Model extends TestModel {
 
             @attribute()
             id?: string = undefined
@@ -106,51 +110,85 @@ describe('adapter', () => {
         return Model
     }
 
-    test('save', async () => {
+    test('create', async () => {
         const Model = modelGenerator()
 
         const m = new Model()
         m.title = 'Title 1'
-        expect(m.$isPersistent).toBe(false)
-        expect(m.id).toBeUndefined()
-        await m.save()
 
-        expect(m.$isPersistent).toBe(true)
-        expect(m.id).toBeDefined()
+        let data = undefined
+        Model.$adapter.create = d => data = d as any
+        await m.$saveOnly(['title'])
+        expect(data).toEqual({ title: 'Title 1' })
     })
 
-    test('query', async () => {
+    test('update', async () => {
         const Model = modelGenerator()
 
-        const model = new Model()
-        model.title = 'test'
-        model.save()
+        const m = new Model()
+        m.id = 'lel'
+        m.title = 'Title 1'
+        m.$attributes.storage = {} as any
 
-        const result = (await Model.query().where('title', Comparison.$eq, 'test').first())!
-        expect(result).toBeInstanceOf(OpaqueModel)
-        expect(result.title).toBe('test')
+        let query = undefined
+        let data = undefined
+        Model.$adapter.update = (q, d): any => {
+            data = d as any
+            query = q
+        }
+        await m.$saveOnly(['title'])
+        expect(query).toEqual({ id: 'lel' })
+        expect(data).toEqual({ title: 'Title 1' })
     })
 
-    test('partial save', async () => {
+    test('delete', async () => {
         const Model = modelGenerator()
 
-        const task = new Model()
-        task.title = 'default'
-        await task.save()
-        const copy = (await Model.find(task.id!))!
+        const m = new Model()
+        m.id = 'lel'
+        m.title = 'Title 1'
+        m.$attributes.storage = {} as any
 
-        task.title = 'my new title'
-        task.description = 'my new description'
-        await task.$saveOnly(['title'])
-        expect(task.title).toBe('my new title')
-        expect(task.description).toBe('my new description')
-        expect(copy.title).toBe('my new title')
-        expect(copy.description).toBe('')
-
-        await task.$setAndSave({ title: 'my newer title' })
-        expect(task.title).toBe('my newer title')
-        expect(task.description).toBe('my new description')
-        expect(copy.title).toBe('my newer title')
-        expect(copy.description).toBe('')
+        let query = undefined
+        Model.$adapter.delete = (q): any => {
+            query = q
+        }
+        await m.delete()
+        expect(query).toEqual({ id: 'lel' })
     })
+
+    // test('query', async () => {
+    //     const Model = modelGenerator()
+
+    //     const model = new Model()
+    //     model.title = 'test'
+    //     model.save()
+
+    //     const result = (await Model.query().where('title', Comparison.$eq, 'test').first())!
+    //     expect(result).toBeInstanceOf(TestModel)
+    //     expect(result.title).toBe('test')
+    // })
+
+    // test('partial save', async () => {
+    //     const Model = modelGenerator()
+
+    //     const task = new Model()
+    //     task.title = 'default'
+    //     await task.save()
+    //     const copy = (await Model.find(task.id!))!
+
+    //     task.title = 'my new title'
+    //     task.description = 'my new description'
+    //     await task.$saveOnly(['title'])
+    //     expect(task.title).toBe('my new title')
+    //     expect(task.description).toBe('my new description')
+    //     expect(copy.title).toBe('my new title')
+    //     expect(copy.description).toBe('')
+
+    //     await task.$setAndSave({ title: 'my newer title' })
+    //     expect(task.title).toBe('my newer title')
+    //     expect(task.description).toBe('my new description')
+    //     expect(copy.title).toBe('my newer title')
+    //     expect(copy.description).toBe('')
+    // })
 })

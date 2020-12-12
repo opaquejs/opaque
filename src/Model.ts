@@ -4,7 +4,7 @@ import { OpaqueAdapter, OpaqueAdapterConstructor } from "./Adapter"
 import QueryBuilder, { Comparison } from "./QueryBuilder"
 
 export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
-    const constructor = model.constructor as typeof OpaqueModel
+    const constructor = model.constructor as (new () => OpaqueModel) & typeof OpaqueModel
     constructor.boot()
     constructor.$addAttribute(property, {
         ...options,
@@ -12,7 +12,7 @@ export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { defa
     })
 }
 
-export class OpaqueModel {
+export abstract class OpaqueModel {
     static $schema: Map<string, AttributeOptions<any>>
     static $adapterConstructor: OpaqueAdapterConstructor<any>
     static $adapter: OpaqueAdapter<any>
@@ -26,6 +26,9 @@ export class OpaqueModel {
     static boot(): void {
         if (this.booted) {
             return
+        }
+        if (!this.$adapterConstructor) {
+            throw new Error('You need to use an adapter in order to boot the model "' + this.name + '"!')
         }
         this.booted = true
 
@@ -48,18 +51,18 @@ export class OpaqueModel {
         }
     }
 
-    static $fromStorage<Model extends typeof OpaqueModel>(this: Model, data: ModelAttributes<InstanceType<Model>>) {
+    static $fromStorage<Model extends new () => OpaqueModel>(this: Model, data: ModelAttributes<InstanceType<Model>>) {
         const model = new this() as InstanceType<Model>
         model.$setStorage(data as ModelAttributes<InstanceType<Model>>)
         model.$resetAll()
         return model
     }
 
-    static query<Model extends typeof OpaqueModel>(this: Model) {
+    static query<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model) {
         return new QueryBuilder(this)
     }
 
-    static async find<Model extends typeof OpaqueModel>(this: Model, key: Model["primaryKey"]) {
+    static async find<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, key: Model["primaryKey"]) {
         return await this.query().where(this.primaryKey as any, Comparison.$eq, key).first()
     }
 
@@ -161,6 +164,10 @@ export class OpaqueModel {
 
     async save(): Promise<void> {
         return this.$saveAll()
+    }
+
+    async delete(): Promise<void> {
+        return await this.$adapter.delete(this.$ownQuery)
     }
 
     async $saveOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>): Promise<void> {
