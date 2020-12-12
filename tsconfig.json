@@ -11,7 +11,7 @@
     "include": [
         "src",
         "../local/src/__tests__/RuntimeImplementation.test.ts",
-        "../local/src/__tests__/QueryBuilder.test.ts"
+        "../local/src/__tests__/Backend.ts"
     ],
     "exclude": [
         "node_modules"

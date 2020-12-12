@@ -20,6 +20,7 @@ describe('QueryBuilder', () => {
     test('query', async () => {
         const query = new QueryBuilder(Test).where('title', '==', 'hello').limit(12).skip(5).or(query => query.where('title', '!=', 'hello')).orWhere('title', '<', '12').$query
         expect(query).toEqual({ $limit: 12, $skip: 5, title: { $eq: 'hello' }, $or: [{ title: { $ne: 'hello' } }, { title: { $lt: '12' } }] })
+        query.title
     })
     test('get', async () => {
         const result = await (new QueryBuilder(Test).get())

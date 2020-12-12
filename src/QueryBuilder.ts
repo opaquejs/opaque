@@ -1,16 +1,13 @@
 import { OpaqueModel } from "./Model";
 import { ModelAttributes } from "./Contracts";
-import { OpaqueAdapter } from "./Adapter";
-import { Constructor } from "./util";
-import { OpaqueQuery } from "./Query";
 
 export type ComparisonTypes<Value> = {
     '==': Value,
     '!=': Value,
     '<': Value,
     '>': Value,
-    '>=': Value,
     '<=': Value,
+    '>=': Value,
     'in': Value[],
 }
 
@@ -25,7 +22,7 @@ export enum Comparison {
 }
 
 export type Query<O extends Object> = Partial<{
-    [P in keyof O]: Partial<ComparisonTypes<O[P]>> | O[P]
+    [P in keyof O]: Partial<ComparisonTypes<O[P]>>
 } & {
     $or: Query<O>[],
 }>
@@ -47,7 +44,7 @@ export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof
         return new (this.constructor as any)(this.model, query) as this
     }
 
-    where<Attribute extends keyof ModelAttributes<InstanceType<Model>>, Key extends keyof ComparisonTypes<ModelAttributes<InstanceType<Model>>[Attribute]>>(attribute: Attribute, operator: Key, value: ComparisonTypes<ModelAttributes<InstanceType<Model>>[Attribute]>[Key]) {
+    where<Attributes extends ModelAttributes<InstanceType<Model>>, Attribute extends keyof Attributes, Key extends keyof ComparisonTypes<Attributes[Attribute]>>(attribute: Attribute, operator: Key, value: ComparisonTypes<Attributes[Attribute]>[Key]) {
         return this.subQuery({
             ...this.$query,
             [attribute]: {
@@ -66,11 +63,11 @@ export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof
         })
     }
 
-    andWhere<Attribute extends keyof ModelAttributes<InstanceType<Model>>, Key extends keyof ComparisonTypes<ModelAttributes<InstanceType<Model>>[Attribute]>>(attribute: Attribute, operator: Key, value: ComparisonTypes<ModelAttributes<InstanceType<Model>>[Attribute]>[Key]) {
+    andWhere<Attributes extends ModelAttributes<InstanceType<Model>>, Attribute extends keyof Attributes, Key extends keyof ComparisonTypes<Attributes[Attribute]>>(attribute: Attribute, operator: Key, value: ComparisonTypes<Attributes[Attribute]>[Key]) {
         return this.where(attribute, operator, value)
     }
 
-    orWhere<Attribute extends keyof ModelAttributes<InstanceType<Model>>, Key extends keyof ComparisonTypes<ModelAttributes<InstanceType<Model>>[Attribute]>>(attribute: Attribute, operator: Key, value: ComparisonTypes<ModelAttributes<InstanceType<Model>>[Attribute]>[Key]) {
+    orWhere<Attributes extends ModelAttributes<InstanceType<Model>>, Attribute extends keyof Attributes, Key extends keyof ComparisonTypes<Attributes[Attribute]>>(attribute: Attribute, operator: Key, value: ComparisonTypes<Attributes[Attribute]>[Key]) {
         return this.or(query => query.where(attribute, operator, value))
     }
 
