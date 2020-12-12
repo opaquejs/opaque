@@ -22,7 +22,9 @@ export enum Comparison {
 }
 
 export type Query<O extends Object> = Partial<{
-    [P in keyof O]: Partial<ComparisonTypes<O[P]>>
+    [P in keyof O]: Partial<{
+        [C in keyof typeof Comparison]: ComparisonTypes<O[P]>[(typeof Comparison)[C]]
+    }>
 } & {
     $or: Query<O>[],
 }>
