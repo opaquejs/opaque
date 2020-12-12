@@ -9,11 +9,11 @@ export interface OpaqueAdapter<Model extends typeof OpaqueModel> {
     delete(query: RootQuery<ModelAttributes<InstanceType<Model>>>): Promise<void>
 }
 
-export interface OpaqueAdapterConstructor<Model extends typeof OpaqueModel> {
-    new(model: Model): OpaqueAdapter<Model>
-}
-
 export class NoOpAdapter<Model extends typeof OpaqueModel> implements OpaqueAdapter<Model> {
+    constructor(public model: Model) {
+
+    }
+
     async create(data: ModelAttributes<InstanceType<Model>>) {
         return data
     }

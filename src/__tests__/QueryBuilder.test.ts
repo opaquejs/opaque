@@ -1,14 +1,16 @@
 import QueryBuilder, { Query } from "../QueryBuilder"
 import { ModelAttributes } from "../Contracts"
-import { NoOpAdapter } from "../Adapter"
+import { NoOpAdapter, OpaqueAdapter } from "../Adapter"
 import { OpaqueModel, attribute } from "../Model"
 
-class Test extends OpaqueModel {
-    static $adapterConstructor = class extends NoOpAdapter<ModelAttributes<Test>> {
-        async read(query: Query<ModelAttributes<Test>>) {
-            return [{ title: 'hello' }]
-        }
+class TestAdapter extends NoOpAdapter<typeof OpaqueModel> {
+    async read(query: Query<ModelAttributes<OpaqueModel>>) {
+        return [{ title: 'hello' }]
     }
+}
+
+class Test extends OpaqueModel {
+    static $adapterConstructor = TestAdapter
 
     @attribute()
     public title: string = ''

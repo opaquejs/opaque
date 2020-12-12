@@ -1,6 +1,6 @@
 import { getInheritedPropertyDescriptor } from "./util"
 import { AttributeOptions, AttributeObjects, ModelAttributes, GetAttributeOptions, SetAttributeOptions } from "./Contracts"
-import { OpaqueAdapter, OpaqueAdapterConstructor } from "./Adapter"
+import { OpaqueAdapter } from "./Adapter"
 import QueryBuilder, { Comparison } from "./QueryBuilder"
 
 export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
@@ -14,7 +14,7 @@ export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { defa
 
 export class OpaqueModel {
     static $schema: Map<string, AttributeOptions<any>>
-    static $adapterConstructor: OpaqueAdapterConstructor<any>
+    static $adapterConstructor: new (model: typeof OpaqueModel) => OpaqueAdapter<any>
     static $adapter: OpaqueAdapter<any>
     static booted: boolean
     static primaryKey: string
