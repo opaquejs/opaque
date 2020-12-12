@@ -12,7 +12,7 @@ export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { defa
     })
 }
 
-export abstract class OpaqueModel {
+export class OpaqueModel {
     static $schema: Map<string, AttributeOptions<any>>
     static $adapterConstructor: OpaqueAdapterConstructor<any>
     static $adapter: OpaqueAdapter<any>
