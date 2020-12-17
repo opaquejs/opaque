@@ -1,6 +1,5 @@
 export * from './Adapter'
 export * from './Contracts'
 export * from './Model'
-export * from './Query'
 export * from './QueryBuilder'
 export * from './util'

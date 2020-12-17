@@ -1,6 +1,6 @@
 import QueryBuilder, { Query } from "../QueryBuilder"
 import { ModelAttributes } from "../Contracts"
-import { NoOpAdapter, OpaqueAdapter } from "../Adapter"
+import { NoOpAdapter } from "../Adapter"
 import { OpaqueModel, attribute } from "../Model"
 
 class TestAdapter extends NoOpAdapter<typeof OpaqueModel> {
@@ -19,7 +19,7 @@ class Test extends OpaqueModel {
 describe('QueryBuilder', () => {
     test('query', async () => {
         const query = new QueryBuilder(Test).where('title', '==', 'hello').limit(12).skip(5).or(query => query.where('title', '!=', 'hello')).orWhere('title', '<', '12').$query
-        expect(query).toEqual({ $limit: 12, $skip: 5, title: { $eq: 'hello' }, $or: [{ title: { $ne: 'hello' } }, { title: { $lt: '12' } }] })
+        expect(query).toEqual({ _limit: 12, _skip: 5, title: { _eq: 'hello' }, _or: [{ title: { _ne: 'hello' } }, { title: { _lt: '12' } }] })
         query.title
     })
     test('get', async () => {

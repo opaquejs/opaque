@@ -63,7 +63,7 @@ export class OpaqueModel {
     }
 
     static async find<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, key: Model["primaryKey"]) {
-        return await this.query().where(this.primaryKey as any, Comparison.$eq, key).first()
+        return await this.query().where(this.primaryKey as any, Comparison._eq, key).first()
     }
 
     constructor() {

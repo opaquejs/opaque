@@ -1,7 +1,6 @@
 import { attribute, OpaqueModel } from "../Model"
 import { ModelAttributes } from "../Contracts"
-import { Comparison, RootQuery } from "../QueryBuilder"
-import { OpaqueAdapter, NoOpAdapter } from "../Adapter"
+import { NoOpAdapter } from "../Adapter"
 
 const expectAttribute = <M extends TestModel>(model: M) => <T extends NonNullable<keyof ModelAttributes<M>>>(attribute: T, value: M[T]) => {
     expect(model.$getAttributes()[attribute]).toBe(value)

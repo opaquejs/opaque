@@ -16,24 +16,24 @@ export type ComparisonTypes<Value> = {
 }
 
 export enum Comparison {
-    $eq = '==',
-    $ne = '!=',
-    $lt = '<',
-    $gt = '>',
-    $lte = '<=',
-    $gte = '>=',
-    $in = 'in'
+    _eq = '==',
+    _ne = '!=',
+    _lt = '<',
+    _gt = '>',
+    _lte = '<=',
+    _gte = '>=',
+    _in = 'in'
 }
 
 export type Query<O extends Object> = Partial<{
     [P in keyof O]: Partial<ComparisonTypes<O[P]>>
 } & {
-    $or: Query<O>[],
+    _or: Query<O>[],
 }>
 
 export type RootQuery<O extends Object> = Query<O> & Partial<{
-    $limit: number,
-    $skip: number,
+    _limit: number,
+    _skip: number,
 }>
 
 export type Queryable = { [key: string]: unknown }
@@ -60,8 +60,8 @@ export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof
     or(generator: (query: this) => this) {
         return this.subQuery({
             ...this.$query,
-            $or: [
-                ...(this.$query.$or || []),
+            _or: [
+                ...(this.$query._or || []),
                 generator(this.subQuery({})).$query
             ]
         })
@@ -75,17 +75,17 @@ export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof
         return this.or(query => query.where(attribute, operator, value))
     }
 
-    limit($limit: number) {
+    limit(_limit: number) {
         return this.subQuery({
             ...this.$query,
-            $limit,
+            _limit,
         })
     }
 
-    skip($skip: number) {
+    skip(_skip: number) {
         return this.subQuery({
             ...this.$query,
-            $skip,
+            _skip,
         })
     }
 
