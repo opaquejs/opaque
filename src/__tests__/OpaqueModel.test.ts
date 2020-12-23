@@ -31,6 +31,12 @@ describe('attributes', () => {
 
         @attribute()
         undefinedAttribute?: string = undefined
+
+        @attribute({
+            serialize: (date?: Date & { ignore?: boolean }) => date?.ignore ? undefined : date?.toISOString(),
+            deserialize: (date: unknown) => typeof date == 'string' ? new Date(date) : undefined,
+        })
+        public serializing?: Date = undefined
     }
 
     test('defaults', () => {
@@ -46,6 +52,18 @@ describe('attributes', () => {
         expect(() => new InavlidModel().invalid).toThrow()
     })
 
+    test('serialize', () => {
+        const test = Model.$fromStorage({ serializing: '2020-12-24T00:00:00', attribute: 'default', undefinedAttribute: 'lel' })
+        expect(test.serializing).toBeInstanceOf(Date)
+
+        const date = new Date()
+        const ignoreDate: Date & { ignore?: boolean } = new Date()
+        ignoreDate.ignore = true
+        expect(Model.$serializeAttribute('serializing', date)).toBe(date.toISOString())
+        expect(Model.$deserializeAttribute('serializing', 12)).toBe(undefined)
+        expect(Model.$serializeAttribute('serializing', ignoreDate)).toBe(undefined)
+    })
+
     test('get/set', () => {
         const test = new Model()
 
@@ -58,7 +76,7 @@ describe('attributes', () => {
         expectAttribute(test)('attribute', 'changed 2')
     })
 
-    test('getter/setter', () => {
+    test('getter/setter', async () => {
         class Model extends TestModel {
             @attribute<string>({
                 get: value => value + '€',
@@ -77,7 +95,15 @@ describe('attributes', () => {
         expect(m.$getAttribute('test', { plain: true })).toBe('3')
 
         m.$setAttribute('test', '3€', { plain: true })
+        expect(m.$getAttribute('test', { plain: true })).toBe('3€')
         expectAttribute(m)('test', '3€€')
+
+        m.$adapter.create = ({ test }) => {
+            expect(test).not.toBe('3€€')
+            expect(test).toBe('3€')
+            return Promise.resolve({})
+        }
+        await m.save()
     })
 
     test('reset', () => {

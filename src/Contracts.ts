@@ -10,6 +10,8 @@ export interface AttributeOptions<Type> {
     default: Type,
     get: (value: Type) => Type
     set: (value: Type) => Type,
+    serialize: (value: Type) => unknown
+    deserialize: (value: unknown) => Type
     primaryKey: boolean,
 }
 

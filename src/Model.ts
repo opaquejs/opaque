@@ -43,6 +43,8 @@ export class OpaqueModel {
             default: undefined,
             get: (value: Type) => value,
             set: (value: Type) => value,
+            serialize: value => value,
+            deserialize: value => value,
             primaryKey: false,
             ...options
         })
@@ -51,9 +53,9 @@ export class OpaqueModel {
         }
     }
 
-    static $fromStorage<Model extends new () => OpaqueModel>(this: Model, data: ModelAttributes<InstanceType<Model>>) {
+    static $fromStorage<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: Record<keyof ModelAttributes<InstanceType<Model>>, any>) {
         const model = new this() as InstanceType<Model>
-        model.$setStorage(data as ModelAttributes<InstanceType<Model>>)
+        model.$setStorage(this.$deserialize(data) as ModelAttributes<InstanceType<Model>>)
         model.$resetAll()
         return model
     }
@@ -64,6 +66,22 @@ export class OpaqueModel {
 
     static async find<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, key: Model["primaryKey"]) {
         return await this.query().where(this.primaryKey as any, Comparison._eq, key).first()
+    }
+
+    static $serializeAttribute<Model extends (new () => OpaqueModel) & typeof OpaqueModel, Key extends keyof ModelAttributes<InstanceType<Model>>>(this: Model, key: Key, value: ModelAttributes<InstanceType<Model>>[Key]) {
+        const attribute = this.$schema.get(key)
+        return attribute ? attribute.serialize(value) : value
+    }
+    static $serialize<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: Partial<ModelAttributes<InstanceType<Model>>>) {
+        return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, this.$serializeAttribute(key as keyof ModelAttributes<InstanceType<Model>>, value as ModelAttributes<InstanceType<Model>>[any])])) as Record<keyof Partial<ModelAttributes<InstanceType<Model>>>, unknown>
+    }
+
+    static $deserializeAttribute<Model extends (new () => OpaqueModel) & typeof OpaqueModel, Key extends keyof ModelAttributes<InstanceType<Model>>>(this: Model, key: Key, value: unknown) {
+        const attribute = this.$schema.get(key)
+        return attribute ? attribute.deserialize(value) : value
+    }
+    static $deserialize<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: Record<keyof ModelAttributes<InstanceType<Model>>, unknown>) {
+        return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, this.$deserializeAttribute(key as keyof ModelAttributes<InstanceType<Model>>, value as ModelAttributes<InstanceType<Model>>[any])])) as Record<keyof Partial<ModelAttributes<InstanceType<Model>>>, unknown>
     }
 
     constructor() {
@@ -171,7 +189,7 @@ export class OpaqueModel {
     }
 
     async $saveOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>): Promise<void> {
-        const toInsert = [...attributes].reduce((toInsert, key) => ({ ...toInsert, [key]: this.$getAttribute(key) }), {})
+        const toInsert = [...attributes].reduce((toInsert, key) => ({ ...toInsert, [key]: (this.constructor as typeof OpaqueModel).$serializeAttribute(key as never, this.$getAttribute(key, { plain: true })) }), {})
         if (this.$isPersistent) {
             await this.$adapter.update(this.$ownQuery, toInsert)
         } else {
