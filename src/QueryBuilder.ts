@@ -90,7 +90,7 @@ export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof
     }
 
     async get() {
-        return (await this.model.$adapter.read(this.$query)).map(attributes => this.model.$fromStorage(attributes))
+        return (await this.model.$adapter.read(this.$query)).map(attributes => this.model.$fromStorage(attributes as any))
     }
     async update(data: Partial<Model>) {
         return await this.model.$adapter.update(this.$query, data)
