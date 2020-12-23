@@ -162,7 +162,7 @@ describe('adapter', () => {
             query = q
         }
         await m.$saveOnly(['title'])
-        expect(query).toEqual({ id: 'lel' })
+        expect(query).toEqual({ id: { _eq: 'lel' } })
         expect(data).toEqual({ title: 'Title 1' })
     })
 
@@ -179,7 +179,7 @@ describe('adapter', () => {
             query = q
         }
         await m.delete()
-        expect(query).toEqual({ id: 'lel' })
+        expect(query).toEqual({ id: { _eq: 'lel' } })
     })
 
     // test('query', async () => {
