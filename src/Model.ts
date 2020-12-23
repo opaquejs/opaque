@@ -1,7 +1,7 @@
 import { getInheritedPropertyDescriptor } from "./util"
 import { AttributeOptions, AttributeObjects, ModelAttributes, GetAttributeOptions, SetAttributeOptions } from "./Contracts"
 import { OpaqueAdapter } from "./Adapter"
-import QueryBuilder, { Comparison } from "./QueryBuilder"
+import QueryBuilder, { Comparison, RootQuery, Query } from "./QueryBuilder"
 
 export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
     const constructor = model.constructor as (new () => OpaqueModel) & typeof OpaqueModel
@@ -177,7 +177,7 @@ export class OpaqueModel {
     }
 
     static $queryFor<T>(id: T) {
-        return { [this.primaryKey]: id }
+        return { [this.primaryKey]: { _eq: id } }
     }
 
     async save(): Promise<void> {
