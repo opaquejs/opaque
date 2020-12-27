@@ -182,38 +182,18 @@ describe('adapter', () => {
         expect(query).toEqual({ id: { _eq: 'lel' } })
     })
 
-    // test('query', async () => {
-    //     const Model = modelGenerator()
+    test('save and update', async () => {
+        const Model = modelGenerator()
+        Model.$adapter.create = async () => ({ title: 'fromcreate', id: 'lel', describtion: 'fromcreate' })
+        Model.$adapter.update = async () => [{ title: 'fromupdate', id: 'lel', describtion: 'fromupdate' }]
 
-    //     const model = new Model()
-    //     model.title = 'test'
-    //     model.save()
+        const m = new Model()
+        m.title = 'Initial'
 
-    //     const result = (await Model.query().where('title', Comparison.$eq, 'test').first())!
-    //     expect(result).toBeInstanceOf(TestModel)
-    //     expect(result.title).toBe('test')
-    // })
+        await m.save()
+        expect(m.title).toBe('fromcreate')
 
-    // test('partial save', async () => {
-    //     const Model = modelGenerator()
-
-    //     const task = new Model()
-    //     task.title = 'default'
-    //     await task.save()
-    //     const copy = (await Model.find(task.id!))!
-
-    //     task.title = 'my new title'
-    //     task.description = 'my new description'
-    //     await task.$saveOnly(['title'])
-    //     expect(task.title).toBe('my new title')
-    //     expect(task.description).toBe('my new description')
-    //     expect(copy.title).toBe('my new title')
-    //     expect(copy.description).toBe('')
-
-    //     await task.$setAndSave({ title: 'my newer title' })
-    //     expect(task.title).toBe('my newer title')
-    //     expect(task.description).toBe('my new description')
-    //     expect(copy.title).toBe('my newer title')
-    //     expect(copy.description).toBe('')
-    // })
+        await m.save()
+        expect(m.title).toBe('fromupdate')
+    })
 })

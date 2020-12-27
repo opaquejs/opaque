@@ -191,7 +191,10 @@ export class OpaqueModel {
     async $saveOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>): Promise<void> {
         const toInsert = [...attributes].reduce((toInsert, key) => ({ ...toInsert, [key]: (this.constructor as typeof OpaqueModel).$serializeAttribute(key as never, this.$getAttribute(key, { plain: true })) }), {})
         if (this.$isPersistent) {
-            await this.$adapter.update(this.$ownQuery, toInsert)
+            const updated = (await this.$adapter.update(this.$ownQuery, toInsert))?.[0]
+            if (updated) {
+                this.$setStorage(updated)
+            }
         } else {
             this.$setStorage(await this.$adapter.create(toInsert))
         }

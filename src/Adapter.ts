@@ -5,7 +5,7 @@ import { ModelAttributes } from "./Contracts";
 export interface OpaqueAdapter<Model extends typeof OpaqueModel> {
     create(model: ModelAttributes<InstanceType<Model>>): Promise<ModelAttributes<InstanceType<Model>>>
     read(query: RootQuery<ModelAttributes<InstanceType<Model>>>): Promise<ModelAttributes<InstanceType<Model>>[]>
-    update(query: RootQuery<ModelAttributes<InstanceType<Model>>>, data: Partial<ModelAttributes<InstanceType<Model>>>): Promise<void>
+    update(query: RootQuery<ModelAttributes<InstanceType<Model>>>, data: Partial<ModelAttributes<InstanceType<Model>>>): Promise<ModelAttributes<InstanceType<Model>>[]>
     delete(query: RootQuery<ModelAttributes<InstanceType<Model>>>): Promise<void>
 }
 
@@ -24,6 +24,6 @@ export class NoOpAdapter<Model extends typeof OpaqueModel> implements OpaqueAdap
 
     }
     async update(query: RootQuery<ModelAttributes<InstanceType<Model>>>) {
-
+        return []
     }
 }
