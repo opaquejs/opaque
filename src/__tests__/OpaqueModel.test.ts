@@ -196,4 +196,25 @@ describe('adapter', () => {
         await m.save()
         expect(m.title).toBe('fromupdate')
     })
+
+    test('reactive adapter compatible', async () => {
+        class Model extends TestModel {
+            @attribute({
+                serialize: (date?: Date) => date?.toISOString(),
+                deserialize: (date: unknown) => typeof date == 'string' ? new Date(date) : undefined,
+            })
+            public serializing?: Date = undefined
+        }
+        Model.$adapter.create = async () => ({ serializing: '2020-12-24T18:00:00' })
+
+        const m = new Model()
+        await m.save()
+
+        m.$setStorage({
+            serializing: '2020-12-24T12:00:00' as any,
+        })
+
+        expect(m.serializing).toBeInstanceOf(Date)
+        expect(m.serializing).toEqual(new Date('2020-12-24T12:00:00'))
+    })
 })

@@ -55,7 +55,7 @@ export class OpaqueModel {
 
     static $fromStorage<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: Record<keyof ModelAttributes<InstanceType<Model>>, any>) {
         const model = new this() as InstanceType<Model>
-        model.$setStorage(this.$deserialize(data) as ModelAttributes<InstanceType<Model>>)
+        model.$setStorage(data)
         model.$resetAll()
         return model
     }
@@ -169,7 +169,7 @@ export class OpaqueModel {
     }
 
     $setStorage(data: ModelAttributes<this>) {
-        this.$attributes.storage = data
+        this.$attributes.storage = (this.constructor as typeof OpaqueModel).$deserialize(data) as any
     }
 
     get $ownQuery() {
