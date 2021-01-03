@@ -53,11 +53,11 @@ export class OpaqueModel {
         }
     }
 
-    static $fromRow<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: OpaqueRow) {
-        const model = new this()
+    static $fromRow<Model extends new () => OpaqueModel>(this: Model, data: OpaqueRow) {
+        const model = new this() as InstanceType<Model>
         model.$setRow(data)
         model.$resetAll()
-        return model as InstanceType<Model>
+        return model
     }
 
     static query<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model) {
@@ -213,4 +213,8 @@ export class OpaqueModel {
         this.$setAttributes(attributes)
         this.$saveOnly(Object.keys(attributes) as Iterable<NonNullable<keyof ModelAttributes<this>>>)
     }
+}
+
+class Test extends OpaqueModel {
+
 }
