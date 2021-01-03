@@ -1,9 +1,9 @@
 import { getInheritedPropertyDescriptor } from "./util"
-import { AttributeOptions, AttributeObjects, ModelAttributes, GetAttributeOptions, SetAttributeOptions } from "./Contracts"
-import { OpaqueAdapter } from "./Adapter"
+import { AttributeOptionsContract, AttributeObjects, ModelAttributes, GetAttributeOptions, SetAttributeOptions } from "./Contracts"
 import QueryBuilder, { Comparison, RootQuery, Query } from "./QueryBuilder"
+import { AdapterContract, OpaqueRow } from "./Adapter"
 
-export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
+export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
     const constructor = model.constructor as (new () => OpaqueModel) & typeof OpaqueModel
     constructor.boot()
     constructor.$addAttribute(property, {
@@ -13,9 +13,8 @@ export const attribute = <Type>(options: Partial<AttributeOptions<Type> & { defa
 }
 
 export class OpaqueModel {
-    static $schema: Map<string, AttributeOptions<any>>
-    static $adapterConstructor: new (model: typeof OpaqueModel) => OpaqueAdapter<any>
-    static $adapter: OpaqueAdapter<any>
+    static $schema: Map<string, AttributeOptionsContract<any>>
+    static $adapter: AdapterContract
     static booted: boolean
     static primaryKey: string
 
@@ -27,18 +26,19 @@ export class OpaqueModel {
         if (this.booted) {
             return
         }
-        if (!this.$adapterConstructor) {
-            throw new Error('You need to use an adapter in order to boot the model "' + this.name + '"!')
-        }
         this.booted = true
 
         this.primaryKey = this.primaryKey || 'id'
 
         Object.defineProperty(this, '$schema', { value: new Map() })
-        Object.defineProperty(this, '$adapter', { value: new this.$adapterConstructor(this) })
+        Object.defineProperty(this, '$adapter', { value: this.adapter() })
     }
 
-    static $addAttribute<Type>(name: string, options: Partial<AttributeOptions<Type>> = {}): void {
+    static adapter(): AdapterContract {
+        throw Error(`No adapter for model ${this.name} Implemented!`)
+    }
+
+    static $addAttribute<Type>(name: string, options: Partial<AttributeOptionsContract<Type>> = {}): void {
         this.$schema.set(name, {
             default: undefined,
             get: (value: Type) => value,
@@ -53,35 +53,35 @@ export class OpaqueModel {
         }
     }
 
-    static $fromStorage<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: Record<keyof ModelAttributes<InstanceType<Model>>, any>) {
-        const model = new this() as InstanceType<Model>
-        model.$setStorage(data)
+    static $fromRow<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: OpaqueRow) {
+        const model = new this()
+        model.$setRow(data)
         model.$resetAll()
-        return model
+        return model as InstanceType<Model>
     }
 
     static query<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model) {
         return new QueryBuilder(this)
     }
 
-    static async find<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, key: Model["primaryKey"]) {
-        return await this.query().where(this.primaryKey as any, Comparison._eq, key).first()
+    static async find<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, key: any) {
+        return await this.query().where(this.primaryKey as keyof ModelAttributes<InstanceType<Model>>, Comparison._eq, key).first()
     }
 
-    static $serializeAttribute<Model extends (new () => OpaqueModel) & typeof OpaqueModel, Key extends keyof ModelAttributes<InstanceType<Model>>>(this: Model, key: Key, value: ModelAttributes<InstanceType<Model>>[Key]) {
+    static $serializeAttribute(key: string, value: any) {
         const attribute = this.$schema.get(key)
         return attribute ? attribute.serialize(value) : value
     }
-    static $serialize<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: Partial<ModelAttributes<InstanceType<Model>>>) {
-        return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, this.$serializeAttribute(key as keyof ModelAttributes<InstanceType<Model>>, value as ModelAttributes<InstanceType<Model>>[any])])) as Record<keyof Partial<ModelAttributes<InstanceType<Model>>>, unknown>
+    static $serialize(data: OpaqueRow) {
+        return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, this.$serializeAttribute(key, value)]))
     }
 
-    static $deserializeAttribute<Model extends (new () => OpaqueModel) & typeof OpaqueModel, Key extends keyof ModelAttributes<InstanceType<Model>>>(this: Model, key: Key, value: unknown) {
+    static $deserializeAttribute(key: string, value: any) {
         const attribute = this.$schema.get(key)
         return attribute ? attribute.deserialize(value) : value
     }
-    static $deserialize<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, data: Record<keyof ModelAttributes<InstanceType<Model>>, unknown>) {
-        return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, this.$deserializeAttribute(key as keyof ModelAttributes<InstanceType<Model>>, value as ModelAttributes<InstanceType<Model>>[any])])) as Record<keyof Partial<ModelAttributes<InstanceType<Model>>>, unknown>
+    static $deserialize(data: OpaqueRow) {
+        return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, this.$deserializeAttribute(key, value)]))
     }
 
     constructor() {
@@ -120,17 +120,21 @@ export class OpaqueModel {
         return attributes
     }
 
-    $hasAttribute<T extends keyof ModelAttributes<this>>(attribute: T): boolean {
+    $hasAttribute(attribute: string): boolean {
         return (this.constructor as typeof OpaqueModel).$schema.has(attribute)
     }
 
-    $getAttribute<T extends NonNullable<keyof ModelAttributes<this>>, Value extends this[T]>(attribute: T, options: Partial<GetAttributeOptions> = {}): Value {
-        let value: Value;
+    $getAttribute(attribute: string, options: Partial<GetAttributeOptions> = {}): any {
+        let value: any;
+
+        if (!this.$hasAttribute(attribute)) {
+            throw new Error(`The requested attribute '${attribute}' does not exist on the model '${this.constructor.name}'!`)
+        }
 
         if (attribute in this.$attributes.local) {
-            value = this.$attributes.local[attribute] as Value
+            value = this.$attributes.local[attribute]
         } else {
-            value = this.$attributes.storage![attribute] as Value
+            value = this.$attributes.storage![attribute]
         }
         if (!options.plain) {
             value = (this.constructor as typeof OpaqueModel).$schema.get(attribute)!.get(value)
@@ -138,7 +142,7 @@ export class OpaqueModel {
         return value
     }
 
-    $setAttribute<T extends NonNullable<keyof ModelAttributes<this>>>(attribute: T, value: this[T], options: Partial<SetAttributeOptions> = {}): void {
+    $setAttribute(attribute: string, value: any, options: Partial<SetAttributeOptions> = {}): void {
         if (!this.$hasAttribute(attribute)) {
             throw new Error(`The requested attribute '${attribute}' does not exist on the model '${this.constructor.name}'!`)
         }
@@ -148,9 +152,9 @@ export class OpaqueModel {
         this.$attributes.local[attribute] = value
     }
 
-    $setAttributes<T extends Partial<ModelAttributes<this>>>(attributes: T): void {
+    $setAttributes(attributes: OpaqueRow, options?: Partial<SetAttributeOptions>): void {
         for (const key in attributes) {
-            this.$setAttribute(key as any, (attributes as any)[key])
+            this.$setAttribute(key as any, (attributes as any)[key], options)
         }
     }
 
@@ -168,8 +172,8 @@ export class OpaqueModel {
         }
     }
 
-    $setStorage(data: ModelAttributes<this>) {
-        this.$attributes.storage = (this.constructor as typeof OpaqueModel).$deserialize(data) as any
+    $setRow(data: OpaqueRow) {
+        this.$attributes.storage = (this.constructor as typeof OpaqueModel).$deserialize(data)
     }
 
     get $ownQuery() {
@@ -189,14 +193,14 @@ export class OpaqueModel {
     }
 
     async $saveOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>): Promise<void> {
-        const toInsert = [...attributes].reduce((toInsert, key) => ({ ...toInsert, [key]: (this.constructor as typeof OpaqueModel).$serializeAttribute(key as never, this.$getAttribute(key, { plain: true })) }), {})
+        const toInsert = (this.constructor as typeof OpaqueModel).$serialize([...attributes].reduce((toInsert, key) => ({ ...toInsert, [key]: this.$getAttribute(key, { plain: true }) }), {}))
         if (this.$isPersistent) {
             const updated = (await this.$adapter.update(this.$ownQuery, toInsert))?.[0]
             if (updated) {
-                this.$setStorage(updated)
+                this.$setRow(updated)
             }
         } else {
-            this.$setStorage(await this.$adapter.create(toInsert))
+            this.$setRow(await this.$adapter.create(toInsert))
         }
         this.$resetOnly(attributes)
     }

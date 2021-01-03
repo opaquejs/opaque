@@ -1,4 +1,5 @@
 import { OpaqueModel } from "./Model"
+import { OpaqueRow } from "./Adapter"
 
 export type ModelAttributes<Model extends ParentModel, ParentModel = OpaqueModel> = {
     [Filtered in {
@@ -6,7 +7,7 @@ export type ModelAttributes<Model extends ParentModel, ParentModel = OpaqueModel
     }[keyof Model]]: Model[Filtered];
 }
 
-export interface AttributeOptions<Type> {
+export interface AttributeOptionsContract<Type> {
     default: Type,
     get: (value: Type) => Type
     set: (value: Type) => Type,
@@ -18,8 +19,8 @@ export interface AttributeOptions<Type> {
 // export type AttributeMap<Model extends ParentModel, ParentModel = OpaqueModel> = Map<keyof ModelAttributes<Model, ParentModel>, unknown>
 
 export interface AttributeObjects<Model extends ParentModel, ParentModel = OpaqueModel> {
-    local: Partial<ModelAttributes<Model, ParentModel>>,
-    storage?: ModelAttributes<Model, ParentModel>
+    local: OpaqueRow,
+    storage?: OpaqueRow
 }
 // export interface AttributeMaps<Model extends ParentModel, ParentModel = OpaqueModel> {
 //     local: AttributeMap<Model, ParentModel>,

@@ -9,7 +9,9 @@ const expectAttribute = <M extends TestModel>(model: M) => <T extends NonNullabl
 }
 
 class TestModel extends OpaqueModel {
-    static $adapterConstructor = NoOpAdapter
+    static adapter() {
+        return new NoOpAdapter()
+    }
 }
 
 describe('plain js', () => {
@@ -53,7 +55,7 @@ describe('attributes', () => {
     })
 
     test('serialize', () => {
-        const test = Model.$fromStorage({ serializing: '2020-12-24T00:00:00', attribute: 'default', undefinedAttribute: 'lel' })
+        const test = Model.$fromRow({ serializing: '2020-12-24T00:00:00', attribute: 'default', undefinedAttribute: 'lel' })
         expect(test.serializing).toBeInstanceOf(Date)
 
         const date = new Date()
@@ -210,7 +212,7 @@ describe('adapter', () => {
         const m = new Model()
         await m.save()
 
-        m.$setStorage({
+        m.$setRow({
             serializing: '2020-12-24T12:00:00' as any,
         })
 

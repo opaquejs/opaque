@@ -3,14 +3,16 @@ import { ModelAttributes } from "../Contracts"
 import { NoOpAdapter } from "../Adapter"
 import { OpaqueModel, attribute } from "../Model"
 
-class TestAdapter extends NoOpAdapter<typeof OpaqueModel> {
+class TestAdapter extends NoOpAdapter {
     async read(query: Query<ModelAttributes<OpaqueModel>>) {
         return [{ title: 'hello' }]
     }
 }
 
 class Test extends OpaqueModel {
-    static $adapterConstructor = TestAdapter
+    static adapter() {
+        return new TestAdapter()
+    }
 
     @attribute()
     public title: string = ''

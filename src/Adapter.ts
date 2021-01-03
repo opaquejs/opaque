@@ -1,29 +1,26 @@
 import { RootQuery } from "./QueryBuilder";
-import { OpaqueModel } from "./Model";
-import { ModelAttributes } from "./Contracts";
 
-export interface OpaqueAdapter<Model extends typeof OpaqueModel> {
-    create(model: ModelAttributes<InstanceType<Model>>): Promise<ModelAttributes<InstanceType<Model>>>
-    read(query: RootQuery<ModelAttributes<InstanceType<Model>>>): Promise<ModelAttributes<InstanceType<Model>>[]>
-    update(query: RootQuery<ModelAttributes<InstanceType<Model>>>, data: Partial<ModelAttributes<InstanceType<Model>>>): Promise<ModelAttributes<InstanceType<Model>>[]>
-    delete(query: RootQuery<ModelAttributes<InstanceType<Model>>>): Promise<void>
+export type OpaqueRow = Record<string, unknown>
+
+export interface AdapterContract {
+    create(model: OpaqueRow): Promise<OpaqueRow>
+    read(query: RootQuery<OpaqueRow>): Promise<OpaqueRow[]>
+    update(query: RootQuery<OpaqueRow>, data: OpaqueRow): Promise<OpaqueRow[]>
+    delete(query: RootQuery<OpaqueRow>): Promise<void>
 }
 
-export class NoOpAdapter<Model extends typeof OpaqueModel> implements OpaqueAdapter<Model> {
-    constructor(public model: Model) {
+export class NoOpAdapter implements AdapterContract {
 
-    }
-
-    async create(data: ModelAttributes<InstanceType<Model>>) {
+    async create(data: OpaqueRow) {
         return data
     }
-    async read(query: RootQuery<ModelAttributes<InstanceType<Model>>>) {
-        return [] as ModelAttributes<InstanceType<Model>>[]
+    async read(query: RootQuery<OpaqueRow>) {
+        return [] as OpaqueRow[]
     }
-    async delete(query: RootQuery<ModelAttributes<InstanceType<Model>>>) {
+    async delete(query: RootQuery<OpaqueRow>) {
 
     }
-    async update(query: RootQuery<ModelAttributes<InstanceType<Model>>>) {
+    async update(query: RootQuery<OpaqueRow>) {
         return []
     }
 }
