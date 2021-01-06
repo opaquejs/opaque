@@ -1,5 +1,5 @@
-import { RootQuery } from "./QueryBuilder";
-import { AdapterContract, OpaqueRow } from "./contracts/OpaqueAdapter";
+import { AdapterContract, OpaqueRow } from "./contracts/AdapterContracts";
+import { RootQuery } from "./contracts/QueryBuilderContracts";
 
 export class NoOpAdapter implements AdapterContract {
 

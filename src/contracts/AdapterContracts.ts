@@ -1,4 +1,4 @@
-import { RootQuery } from "../QueryBuilder";
+import { RootQuery } from "./QueryBuilderContracts";
 
 export type OpaqueRow = Record<string, unknown>
 

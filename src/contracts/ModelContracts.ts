@@ -1,6 +1,6 @@
-import { RootQuery } from "../QueryBuilder";
-import { AdapterContract, OpaqueRow } from "./OpaqueAdapter";
+import { AdapterContract, OpaqueRow } from "./AdapterContracts";
 import { OpaqueModel } from "../Model";
+import { RootQuery } from "./QueryBuilderContracts";
 
 export type OpaqueSchema = Map<string, AttributeOptionsContract<any>>
 

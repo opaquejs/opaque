@@ -1,46 +1,9 @@
 import { OpaqueModel } from "./Model";
-import { QueryBuilderContract } from "./contracts/QueryBuilder";
-import { ModelAttributes } from "./contracts/OpaqueModel";
-import { OpaqueRow, SyncAdapterContract, SyncReadAdapterContract, SyncWriteAdapterContract } from "./contracts/OpaqueAdapter";
+import { QueryBuilderContract, Query, ReverseComparisonTypes, Comparison } from "./contracts/QueryBuilderContracts";
+import { ModelAttributes } from "./contracts/ModelContracts";
+import { OpaqueRow, SyncReadAdapterContract, SyncWriteAdapterContract } from "./contracts/AdapterContracts";
 
-export type ReverseComparisonTypes<Value> = {
-    '==': Value,
-    '!=': Value,
-    '<': Value,
-    '>': Value,
-    '<=': Value,
-    '>=': Value,
-    'in': Value[],
-}
-
-export type ComparisonTypes<Value> = {
-    [C in keyof typeof Comparison]: ReverseComparisonTypes<Value>[(typeof Comparison)[C]]
-}
-
-export enum Comparison {
-    _eq = '==',
-    _ne = '!=',
-    _lt = '<',
-    _gt = '>',
-    _lte = '<=',
-    _gte = '>=',
-    _in = 'in'
-}
-
-export type Query<O extends Object> = Partial<{
-    [P in keyof O]: Partial<ComparisonTypes<O[P]>>
-} & {
-    _or: Query<O>[],
-}>
-
-export type RootQuery<O extends Object> = Query<O> & Partial<{
-    _limit: number,
-    _skip: number,
-}>
-
-export type Queryable = { [key: string]: unknown }
-
-export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof OpaqueModel> implements QueryBuilderContract<InstanceType<Model>> {
+export class QueryBuilder<Model extends (new () => OpaqueModel) & typeof OpaqueModel> implements QueryBuilderContract<InstanceType<Model>> {
 
     constructor(public model: Model, public $query: Query<ModelAttributes<InstanceType<Model>>> = {}) {
 

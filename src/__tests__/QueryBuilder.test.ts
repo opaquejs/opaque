@@ -1,7 +1,8 @@
-import QueryBuilder, { Query } from "../QueryBuilder"
 import { NoOpAdapter } from "../Adapter"
 import { OpaqueModel, attribute } from "../Model"
-import { ModelAttributes } from "../contracts/OpaqueModel"
+import { ModelAttributes } from "../contracts/ModelContracts"
+import { Query } from "../contracts/QueryBuilderContracts"
+import { QueryBuilder } from "../QueryBuilder"
 
 class TestAdapter extends NoOpAdapter {
     async read(query: Query<ModelAttributes<OpaqueModel>>) {

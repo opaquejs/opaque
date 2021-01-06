@@ -1,7 +1,8 @@
 import { getInheritedPropertyDescriptor } from "./util"
-import QueryBuilder, { Comparison } from "./QueryBuilder"
-import { OpaqueSchema, OpaqueModelContract, AttributeOptionsContract, ModelAttributes, AttributeObjects, GetAttributeOptions, SetAttributeOptions } from "./contracts/OpaqueModel"
-import { AdapterContract, OpaqueRow } from "./contracts/OpaqueAdapter"
+import { OpaqueSchema, OpaqueModelContract, AttributeOptionsContract, ModelAttributes, AttributeObjects, GetAttributeOptions, SetAttributeOptions } from "./contracts/ModelContracts"
+import { AdapterContract, OpaqueRow } from "./contracts/AdapterContracts"
+import { QueryBuilder } from "./QueryBuilder"
+import { Comparison } from "./contracts/QueryBuilderContracts"
 
 export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
     const constructor = model.constructor as (new () => OpaqueModel) & typeof OpaqueModel
