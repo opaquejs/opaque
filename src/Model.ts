@@ -1,7 +1,7 @@
 import { getInheritedPropertyDescriptor } from "./util"
-import { AttributeOptionsContract, AttributeObjects, ModelAttributes, GetAttributeOptions, SetAttributeOptions } from "./Contracts"
-import QueryBuilder, { Comparison, RootQuery, Query } from "./QueryBuilder"
-import { AdapterContract, OpaqueRow } from "./Adapter"
+import QueryBuilder, { Comparison } from "./QueryBuilder"
+import { OpaqueSchema, OpaqueModelContract, AttributeOptionsContract, ModelAttributes, AttributeObjects, GetAttributeOptions, SetAttributeOptions } from "./contracts/OpaqueModel"
+import { AdapterContract, OpaqueRow } from "./contracts/OpaqueAdapter"
 
 export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) => <M extends OpaqueModel>(model: M, property: string) => {
     const constructor = model.constructor as (new () => OpaqueModel) & typeof OpaqueModel
@@ -12,14 +12,18 @@ export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> 
     })
 }
 
-export class OpaqueModel {
-    static $schema: Map<string, AttributeOptionsContract<any>>
-    static $adapter: AdapterContract
+export class OpaqueModel implements OpaqueModelContract {
+    static $schema: OpaqueSchema
     static booted: boolean
     static primaryKey: string
+    static $_adapter: AdapterContract
 
-    $attributes: AttributeObjects<this> = {
-        local: {}
+    static $getAdapter<Model extends typeof OpaqueModel>(this: Model) {
+        return this.$_adapter as ReturnType<Model["adapter"]>
+    }
+
+    static get $adapter() {
+        return this.$getAdapter()
     }
 
     static boot(): void {
@@ -97,6 +101,10 @@ export class OpaqueModel {
         }
     }
 
+    $attributes: AttributeObjects = {
+        local: {}
+    }
+
     get $isPersistent() {
         return this.$attributes.storage instanceof Object
     }
@@ -124,7 +132,7 @@ export class OpaqueModel {
         return (this.constructor as typeof OpaqueModel).$schema.has(attribute)
     }
 
-    $getAttribute(attribute: string, options: Partial<GetAttributeOptions> = {}): any {
+    $getAttribute(attribute: string, options: Partial<GetAttributeOptions> = {}) {
         let value: any;
 
         if (!this.$hasAttribute(attribute)) {
@@ -142,7 +150,7 @@ export class OpaqueModel {
         return value
     }
 
-    $setAttribute(attribute: string, value: any, options: Partial<SetAttributeOptions> = {}): void {
+    $setAttribute(attribute: string, value: any, options: Partial<SetAttributeOptions> = {}) {
         if (!this.$hasAttribute(attribute)) {
             throw new Error(`The requested attribute '${attribute}' does not exist on the model '${this.constructor.name}'!`)
         }
@@ -150,19 +158,21 @@ export class OpaqueModel {
             value = (this.constructor as typeof OpaqueModel).$schema.get(attribute)!.set(value)
         }
         this.$attributes.local[attribute] = value
+        return this
     }
 
-    $setAttributes(attributes: OpaqueRow, options?: Partial<SetAttributeOptions>): void {
+    $setAttributes(attributes: OpaqueRow, options?: Partial<SetAttributeOptions>) {
         for (const key in attributes) {
             this.$setAttribute(key as any, (attributes as any)[key], options)
         }
+        return this
     }
 
-    $resetAll(): void {
+    $resetAll() {
         return this.$resetOnly(Object.keys(this.$attributes.local) as Iterable<NonNullable<keyof ModelAttributes<this>>>)
     }
 
-    $resetOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>): void {
+    $resetOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>) {
         for (const key of attributes) {
             if (this.$isPersistent) {
                 delete this.$attributes.local[key]
@@ -170,10 +180,12 @@ export class OpaqueModel {
                 this.$attributes.local[key] = this.$schema.get(key)!.default
             }
         }
+        return this
     }
 
     $setRow(data: OpaqueRow) {
         this.$attributes.storage = (this.constructor as typeof OpaqueModel).$deserialize(data)
+        return this
     }
 
     get $ownQuery() {
@@ -184,15 +196,15 @@ export class OpaqueModel {
         return { [this.primaryKey]: { _eq: id } }
     }
 
-    async save(): Promise<void> {
+    async save() {
         return this.$saveAll()
     }
 
-    async delete(): Promise<void> {
+    async delete() {
         return await this.$adapter.delete(this.$ownQuery)
     }
 
-    async $saveOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>): Promise<void> {
+    async $saveOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>) {
         const toInsert = (this.constructor as typeof OpaqueModel).$serialize([...attributes].reduce((toInsert, key) => ({ ...toInsert, [key]: this.$getAttribute(key, { plain: true }) }), {}))
         if (this.$isPersistent) {
             const updated = (await this.$adapter.update(this.$ownQuery, toInsert))?.[0]
@@ -202,19 +214,16 @@ export class OpaqueModel {
         } else {
             this.$setRow(await this.$adapter.create(toInsert))
         }
-        this.$resetOnly(attributes)
+        return this.$resetOnly(attributes)
     }
 
-    $saveAll(): Promise<void> {
+    $saveAll() {
         return this.$saveOnly(Object.keys(this.$attributes.local) as Iterable<NonNullable<keyof ModelAttributes<this>>>)
     }
 
-    async $setAndSave(attributes: Partial<ModelAttributes<this>>): Promise<void> {
+    async $setAttributesAndSave(attributes: Partial<ModelAttributes<this>>) {
         this.$setAttributes(attributes)
         this.$saveOnly(Object.keys(attributes) as Iterable<NonNullable<keyof ModelAttributes<this>>>)
+        return this
     }
-}
-
-class Test extends OpaqueModel {
-
 }

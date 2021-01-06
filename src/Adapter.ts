@@ -1,13 +1,5 @@
 import { RootQuery } from "./QueryBuilder";
-
-export type OpaqueRow = Record<string, unknown>
-
-export interface AdapterContract {
-    create(model: OpaqueRow): Promise<OpaqueRow>
-    read(query: RootQuery<OpaqueRow>): Promise<OpaqueRow[]>
-    update(query: RootQuery<OpaqueRow>, data: OpaqueRow): Promise<OpaqueRow[]>
-    delete(query: RootQuery<OpaqueRow>): Promise<void>
-}
+import { AdapterContract, OpaqueRow } from "./contracts/OpaqueAdapter";
 
 export class NoOpAdapter implements AdapterContract {
 

@@ -1,5 +1,7 @@
 import { OpaqueModel } from "./Model";
-import { ModelAttributes } from "./Contracts";
+import { QueryBuilderContract } from "./contracts/QueryBuilder";
+import { ModelAttributes } from "./contracts/OpaqueModel";
+import { OpaqueRow, SyncAdapterContract, SyncReadAdapterContract, SyncWriteAdapterContract } from "./contracts/OpaqueAdapter";
 
 export type ReverseComparisonTypes<Value> = {
     '==': Value,
@@ -38,7 +40,7 @@ export type RootQuery<O extends Object> = Query<O> & Partial<{
 
 export type Queryable = { [key: string]: unknown }
 
-export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof OpaqueModel> {
+export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof OpaqueModel> implements QueryBuilderContract<InstanceType<Model>> {
 
     constructor(public model: Model, public $query: Query<ModelAttributes<InstanceType<Model>>> = {}) {
 
@@ -57,24 +59,6 @@ export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof
         })
     }
 
-    or(generator: (query: this) => this) {
-        return this.subQuery({
-            ...this.$query,
-            _or: [
-                ...(this.$query._or || []),
-                generator(this.subQuery({})).$query
-            ]
-        })
-    }
-
-    andWhere<Attributes extends ModelAttributes<InstanceType<Model>>, Attribute extends keyof Attributes, Key extends keyof ReverseComparisonTypes<Attributes[Attribute]>>(attribute: Attribute, operator: Key, value: ReverseComparisonTypes<Attributes[Attribute]>[Key]) {
-        return this.where(attribute, operator, value)
-    }
-
-    orWhere<Attributes extends ModelAttributes<InstanceType<Model>>, Attribute extends keyof Attributes, Key extends keyof ReverseComparisonTypes<Attributes[Attribute]>>(attribute: Attribute, operator: Key, value: ReverseComparisonTypes<Attributes[Attribute]>[Key]) {
-        return this.or(query => query.where(attribute, operator, value))
-    }
-
     limit(_limit: number) {
         return this.subQuery({
             ...this.$query,
@@ -89,17 +73,35 @@ export default class QueryBuilder<Model extends (new () => OpaqueModel) & typeof
         })
     }
 
-    async get() {
-        return (await this.model.$adapter.read(this.$query)).map(attributes => this.model.$fromRow(attributes as any))
+    $hydrate(data: OpaqueRow[]) {
+        return data.map(attributes => this.model.$fromRow(attributes))
     }
-    async update(data: Partial<Model>) {
-        return await this.model.$adapter.update(this.$query, data)
+
+    async get() {
+        return this.$hydrate(await this.model.$adapter.read(this.$query))
+    }
+    async update(data: Partial<ModelAttributes<InstanceType<Model>>>) {
+        return this.$hydrate(await this.model.$adapter.update(this.model.$serialize(this.$query), data))
     }
     async delete() {
         return await this.model.$adapter.delete(this.$query)
     }
 
-    async first(): Promise<InstanceType<Model> | undefined> {
+    async first() {
         return (await this.limit(1).get())[0]
+    }
+
+    getSync(this: QueryBuilder<Model & { adapter: () => SyncReadAdapterContract }>) {
+        return this.$hydrate(this.model.$getAdapter().readSync(this.$query))
+    }
+    updateSync(this: QueryBuilder<Model & { adapter: () => SyncWriteAdapterContract }>, data: OpaqueRow) {
+        return this.$hydrate(this.model.$getAdapter().updateSync(this.$query, data))
+    }
+    deleteSync(this: QueryBuilder<Model & { adapter: () => SyncWriteAdapterContract }>) {
+        return this.model.$getAdapter().deleteSync(this.$query)
+    }
+
+    firstSync(this: QueryBuilder<Model & { adapter: () => SyncReadAdapterContract }>): InstanceType<Model> {
+        return this.limit(1).getSync()[0]
     }
 }
