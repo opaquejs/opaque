@@ -17,14 +17,10 @@ export class OpaqueModel implements OpaqueModelContract {
     static $schema: OpaqueSchema
     static booted: boolean
     static primaryKey: string
-    static $_adapter: AdapterContract
+    static $adapter: AdapterContract
 
     static $getAdapter<Model extends typeof OpaqueModel>(this: Model) {
-        return this.$_adapter as ReturnType<Model["adapter"]>
-    }
-
-    static get $adapter() {
-        return this.$getAdapter()
+        return this.$adapter as ReturnType<Model["adapter"]>
     }
 
     static boot(): void {
