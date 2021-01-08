@@ -6,7 +6,7 @@ export type OpaqueSchema = Map<string, AttributeOptionsContract<any>>
 
 export type ModelAttributes<Model, ParentModel = OpaqueModel> = {
     [Filtered in {
-        [P in keyof Model]: P extends keyof ParentModel ? never : Model[P] extends Function ? never : P extends number ? never : P extends symbol ? never : P;
+        [P in keyof Model]: P extends string ? (P extends keyof ParentModel ? never : Model[P] extends Function ? never : P extends number ? never : P extends symbol ? never : P) : never;
     }[keyof Model]]: Model[Filtered];
 }
 

@@ -17,7 +17,7 @@ export class QueryBuilder<Model extends (new () => OpaqueModel) & typeof OpaqueM
         return this.subQuery({
             ...this.$query,
             [attribute]: {
-                [Object.entries(Comparison).find(([_, literal]) => literal == operator)![0]]: value
+                [Object.entries(Comparison).find(([_, literal]) => literal == operator)![0]]: this.model.$serializeAttribute(attribute as string, value)
             }
         })
     }
