@@ -1,6 +1,7 @@
 import { AdapterContract, OpaqueRow } from "./AdapterContracts";
 import { OpaqueModel } from "../Model";
-import { RootQuery } from "./QueryBuilderContracts";
+import { RootQuery, QueryBuilderContract } from "./QueryBuilderContracts";
+import { QueryBuilder } from "../QueryBuilder";
 
 export type OpaqueSchema = Map<string, AttributeOptionsContract<any>>
 
@@ -48,7 +49,7 @@ export interface OpaqueModelContract {
 
     $setRow(data: OpaqueRow): this
 
-    $ownQuery: RootQuery<any>
+    $ownQuery: QueryBuilderContract<any>
 
     save(): Promise<this>
     $saveAll(): Promise<this>

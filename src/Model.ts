@@ -66,7 +66,7 @@ export class OpaqueModel implements OpaqueModelContract {
     }
 
     static async find<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(this: Model, key: any) {
-        return await this.query().where(this.primaryKey as keyof ModelAttributes<InstanceType<Model>>, Comparison._eq, key).first()
+        return await this.$queryFor(key).first()
     }
 
     static $serializeAttribute(key: string, value: any) {
@@ -190,7 +190,7 @@ export class OpaqueModel implements OpaqueModelContract {
     }
 
     static $queryFor(id: any) {
-        return (this.query() as QueryBuilder<any>).where(this.primaryKey, '==', id).$query
+        return (this.query() as QueryBuilder<any>).where(this.primaryKey, '==', id)
     }
 
     async save() {
@@ -198,13 +198,13 @@ export class OpaqueModel implements OpaqueModelContract {
     }
 
     async delete() {
-        return await this.$adapter.delete(this.$ownQuery)
+        return await this.$ownQuery.delete()
     }
 
     async $saveOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>) {
         const toInsert = (this.constructor as typeof OpaqueModel).$serialize([...attributes].reduce((toInsert, key) => ({ ...toInsert, [key]: this.$getAttribute(key, { plain: true }) }), {}))
         if (this.$isPersistent) {
-            const updated = (await this.$adapter.update(this.$ownQuery, toInsert))?.[0]
+            const updated = (await this.$adapter.update(this.$ownQuery.$query, toInsert))[0]
             if (updated) {
                 this.$setRow(updated)
             }

@@ -44,7 +44,7 @@ export class QueryBuilder<Model extends (new () => OpaqueModel) & typeof OpaqueM
         return this.$hydrate(await this.model.$adapter.read(this.$query))
     }
     async update(data: Partial<ModelAttributes<InstanceType<Model>>>) {
-        return this.$hydrate(await this.model.$adapter.update(this.model.$serialize(this.$query), data))
+        return this.$hydrate(await this.model.$adapter.update(this.$query, data))
     }
     async delete() {
         return await this.model.$adapter.delete(this.$query)

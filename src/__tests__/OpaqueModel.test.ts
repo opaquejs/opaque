@@ -162,6 +162,7 @@ describe('adapter', () => {
         Model.$adapter.update = (q, d): any => {
             data = d as any
             query = q
+            return []
         }
         await m.$saveOnly(['title'])
         expect(query).toEqual({ id: { _eq: 'lel' } })
