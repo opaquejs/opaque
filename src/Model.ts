@@ -189,8 +189,8 @@ export class OpaqueModel implements OpaqueModelContract {
         return (this.constructor as typeof OpaqueModel).$queryFor(this.$primaryKeyValue)
     }
 
-    static $queryFor<T>(id: T) {
-        return { [this.primaryKey]: { _eq: id } }
+    static $queryFor(id: any) {
+        return (this.query() as QueryBuilder<any>).where(this.primaryKey, '==', id).$query
     }
 
     async save() {
