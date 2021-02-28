@@ -1,7 +1,5 @@
-export * from './Adapter'
-export * from './contracts/AdapterContracts'
-export * from './contracts/ModelContracts'
-export * from './contracts/QueryBuilderContracts'
-export * from './Model'
-export * from './QueryBuilder'
-export * from './util'
+export { OpaqueModel, attribute } from "./Model";
+export { NoOpAdapter } from "./NoOpAdapter";
+export { AdapterInterface } from "./contracts/AdapterInterface";
+export { AbstractOpaqueTable, OpaqueRow, OpaqueTable } from "./contracts/ModelContracts";
+export { QueryBuilderInterface } from "./contracts/QueryBuilderInterface";

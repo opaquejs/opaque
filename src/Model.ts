@@ -1,52 +1,48 @@
-import { getInheritedPropertyDescriptor } from './util';
+import { getInheritedPropertyDescriptor } from "./util";
 import {
   OpaqueSchema,
-  OpaqueModelContract,
   AttributeOptionsContract,
   ModelAttributes,
   AttributeObjects,
   GetAttributeOptions,
   SetAttributeOptions,
-} from './contracts/ModelContracts';
-import { AdapterContract, OpaqueRow } from './contracts/AdapterContracts';
-import { QueryBuilder } from './QueryBuilder';
+  OpaqueTable,
+  OpaqueRow,
+  PrimaryKeyValue,
+  OpaqueAttributes,
+  AbstractOpaqueTable,
+} from "./contracts/ModelContracts";
 
-export const attribute = <Type>(
-  options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}
-) => <M extends OpaqueModel>(model: M, property: string) => {
-  const constructor = model.constructor as (new () => OpaqueModel) &
-    typeof OpaqueModel;
+export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) => <
+  M extends OpaqueRow
+>(
+  model: M,
+  property: string
+) => {
+  const constructor = model.constructor as AbstractOpaqueTable;
   constructor.$addAttribute(property, {
     ...options,
-    default: (new constructor() as any)[property],
+    default: ((new constructor() as unknown) as Record<string, unknown>)[property] as Type,
   });
 };
 
-export const boot = () => {
-  return (model: typeof OpaqueModel) => {
-    model.boot();
+export function staticImplements<T>() {
+  return <U extends T>(constructor: U) => {
+    constructor;
   };
-};
+}
 
-export class OpaqueModel implements OpaqueModelContract {
-  static $inheritedSchemas: Map<typeof OpaqueModel, OpaqueSchema> = new Map();
-  static booted: boolean;
-  static primaryKey: string;
-  static $adapter: AdapterContract;
+@staticImplements<AbstractOpaqueTable>()
+export class AbstractOpaqueImplementation implements OpaqueRow {
+  static $inheritedSchemas: Map<typeof AbstractOpaqueImplementation, OpaqueSchema> = new Map();
 
-  static $getAdapter<Model extends typeof OpaqueModel>(this: Model) {
-    return this.$adapter as ReturnType<Model['adapter']>;
-  }
-
-  static boot(): void {
-    if (this.booted) {
-      return;
+  static get primaryKey() {
+    const primaryKeyFields = Array.from(this.$schema.entries()).filter(([_key, options]) => options.primaryKey);
+    const primaryKeyField = primaryKeyFields[primaryKeyFields.length - 1];
+    if (!Array.isArray(primaryKeyField)) {
+      throw new Error(`No primary key was found for the model "${this.name}"!`);
     }
-    this.booted = true;
-
-    this.primaryKey = this.primaryKey || 'id';
-
-    Object.defineProperty(this, '$adapter', { value: this.adapter() });
+    return primaryKeyField[0];
   }
 
   static get $schema() {
@@ -61,14 +57,7 @@ export class OpaqueModel implements OpaqueModelContract {
     return finalSchema;
   }
 
-  static adapter(): AdapterContract {
-    throw Error(`No adapter for model ${this.name} Implemented!`);
-  }
-
-  static $addAttribute<Type>(
-    name: string,
-    options: Partial<AttributeOptionsContract<Type>> = {}
-  ): void {
+  static $addAttribute<Type>(name: string, options: Partial<AttributeOptionsContract<any>> = {}) {
     if (!this.$inheritedSchemas.has(this)) {
       this.$inheritedSchemas.set(this, new Map());
     }
@@ -81,77 +70,56 @@ export class OpaqueModel implements OpaqueModelContract {
       primaryKey: false,
       ...options,
     });
-    if (options.primaryKey) {
-      this.primaryKey = name;
-    }
   }
 
-  static $fromRow<Model extends new () => OpaqueModel>(
-    this: Model,
-    data: OpaqueRow
-  ) {
-    const model = new this() as InstanceType<Model>;
+  static make<This extends AbstractOpaqueTable>(this: This, data?: OpaqueAttributes) {
+    const instance = new this() as InstanceType<This>;
+    if (data) {
+      (instance as AbstractOpaqueImplementation).$setAttributes(data);
+    }
+    return instance;
+  }
+
+  static $fromRow<This extends AbstractOpaqueTable>(this: This, data: OpaqueAttributes) {
+    const model = new this() as InstanceType<This>;
     model.$setRow(data);
     model.$resetAll();
     return model;
   }
 
-  static query<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(
-    this: Model
-  ) {
-    return new QueryBuilder(this);
+  static find<This extends OpaqueTable>(this: This, key: PrimaryKeyValue) {
+    return this.query().for(key).first!();
   }
 
-  static async find<Model extends (new () => OpaqueModel) & typeof OpaqueModel>(
-    this: Model,
-    key: any
-  ) {
-    return await this.$queryFor(key).first();
-  }
-
-  static $serializeAttribute(key: string, value: any) {
+  static $serializeAttribute(key: string, value: unknown) {
     const attribute = this.$schema.get(key);
     return attribute ? attribute.serialize(value) : value;
   }
-  static $serialize(data: OpaqueRow) {
-    return Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [
-        key,
-        this.$serializeAttribute(key, value),
-      ])
-    );
+  static $serialize(data: OpaqueAttributes) {
+    return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, this.$serializeAttribute(key, value)]));
   }
 
-  static $deserializeAttribute(key: string, value: any) {
+  static $deserializeAttribute(key: string, value: unknown) {
     const attribute = this.$schema.get(key);
     return attribute ? attribute.deserialize(value) : value;
   }
-  static $deserialize(data: OpaqueRow) {
+  static $deserialize(data: OpaqueAttributes) {
     return Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [
-        key,
-        this.$deserializeAttribute(key, value),
-      ])
-    );
+      Object.entries(data).map(([key, value]) => [key, this.$deserializeAttribute(key, value)])
+    ) as any;
   }
 
   constructor() {
-    const schema = (this.constructor as typeof OpaqueModel).$schema;
+    const schema = (this.constructor as OpaqueTable).$schema;
     for (const attribute of schema.keys()) {
       Object.defineProperty(this, attribute, {
-        get:
-          getInheritedPropertyDescriptor(this, attribute)?.get ||
-          ((() => this.$getAttribute(attribute as any)) as any),
+        get: getInheritedPropertyDescriptor(this, attribute)?.get || (() => this.$getAttribute(attribute)),
         set:
           getInheritedPropertyDescriptor(this, attribute)?.set ||
-          (((value: keyof ModelAttributes<this>) =>
-            this.$setAttribute(attribute as any, value)) as any),
+          ((value: unknown) => this.$setAttribute(attribute, value)),
       });
       if (schema.get(attribute)!.default !== undefined) {
-        this.$setAttribute(
-          attribute as NonNullable<keyof ModelAttributes<this>>,
-          schema.get(attribute)!.default
-        );
+        this.$setAttribute(attribute, schema.get(attribute)!.default);
       }
     }
   }
@@ -163,42 +131,40 @@ export class OpaqueModel implements OpaqueModelContract {
   get $isPersistent() {
     return this.$attributes.storage instanceof Object;
   }
-
-  get $adapter() {
-    return (this.constructor as typeof OpaqueModel).$adapter;
-  }
   get $schema() {
-    return (this.constructor as typeof OpaqueModel).$schema;
+    return (this.constructor as OpaqueTable).$schema;
   }
 
-  get $primaryKeyValue(): any {
-    return this.$getAttribute(
-      (this.constructor as typeof OpaqueModel).primaryKey as any
-    );
+  get $primaryKeyValue() {
+    return this.$getAttribute((this.constructor as OpaqueTable).primaryKey) as PrimaryKeyValue;
   }
 
-  $getAttributes(): ModelAttributes<this> {
-    const attributes: any = {};
-    for (const attribute of (this
-      .constructor as typeof OpaqueModel).$schema.keys()) {
-      attributes[attribute] = this.$getAttribute(
-        attribute as NonNullable<keyof ModelAttributes<this>>
-      );
+  set $primaryKeyValue(value: PrimaryKeyValue) {
+    this.$setAttribute((this.constructor as OpaqueTable).primaryKey, value);
+  }
+
+  $getAttributes(pickOrOptions?: readonly string[] | GetAttributeOptions, optionsIfPick?: GetAttributeOptions) {
+    const pick = Array.isArray(pickOrOptions)
+      ? pickOrOptions
+      : Array.from((this.constructor as OpaqueTable).$schema.keys());
+    const options = Array.isArray(pickOrOptions) ? optionsIfPick : (pickOrOptions as GetAttributeOptions | undefined);
+
+    const attributes: Record<string, unknown> = {};
+    for (const attribute of pick) {
+      attributes[attribute] = this.$getAttribute(attribute as keyof ModelAttributes<this>, options);
     }
     return attributes;
   }
 
   $hasAttribute(attribute: string): boolean {
-    return (this.constructor as typeof OpaqueModel).$schema.has(attribute);
+    return (this.constructor as OpaqueTable).$schema.has(attribute);
   }
 
   $getAttribute(attribute: string, options: Partial<GetAttributeOptions> = {}) {
-    let value: any;
+    let value: unknown;
 
     if (!this.$hasAttribute(attribute)) {
-      throw new Error(
-        `The requested attribute '${attribute}' does not exist on the model '${this.constructor.name}'!`
-      );
+      throw new Error(`The requested attribute '${attribute}' does not exist on the model '${this.constructor.name}'!`);
     }
 
     if (attribute in this.$attributes.local) {
@@ -206,52 +172,41 @@ export class OpaqueModel implements OpaqueModelContract {
     } else {
       value = this.$attributes.storage![attribute];
     }
-    if (!options.plain) {
-      value = (this.constructor as typeof OpaqueModel).$schema
-        .get(attribute)!
-        .get(value);
+    if (!options.raw) {
+      value = (this.constructor as OpaqueTable).$schema.get(attribute)!.get(value);
     }
     return value;
   }
 
-  $setAttribute(
-    attribute: string,
-    value: any,
-    options: Partial<SetAttributeOptions> = {}
-  ) {
+  $setAttribute(attribute: string, value: unknown, options: SetAttributeOptions = {}) {
     if (!this.$hasAttribute(attribute)) {
-      throw new Error(
-        `The requested attribute '${attribute}' does not exist on the model '${this.constructor.name}'!`
-      );
+      throw new Error(`The requested attribute '${attribute}' does not exist on the model '${this.constructor.name}'!`);
     }
-    if (!options.plain) {
-      value = (this.constructor as typeof OpaqueModel).$schema
-        .get(attribute)!
-        .set(value);
+    if (!options.raw) {
+      value = (this.constructor as OpaqueTable).$schema.get(attribute)!.set(value);
     }
     this.$attributes.local[attribute] = value;
     return this;
   }
 
-  $setAttributes(
-    attributes: OpaqueRow,
-    options?: Partial<SetAttributeOptions>
-  ) {
+  $setAttributes(attributes: OpaqueAttributes, options?: Partial<SetAttributeOptions>) {
     for (const key in attributes) {
-      this.$setAttribute(key as any, (attributes as any)[key], options);
+      this.$setAttribute(key, attributes[key], options);
     }
     return this;
   }
 
-  $resetAll() {
-    return this.$resetOnly(
-      Object.keys(this.$attributes.local) as Iterable<
-        NonNullable<keyof ModelAttributes<this>>
-      >
-    );
+  reset(...attributes: ReadonlyArray<keyof ModelAttributes<this>> | [ReadonlyArray<keyof ModelAttributes<this>>]) {
+    if (attributes.length == 0) {
+      return this.$resetAll();
+    }
+    return this.$resetOnly(Array.isArray(attributes[0]) ? attributes[0] : attributes);
   }
 
-  $resetOnly(attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>) {
+  $resetAll() {
+    return this.$resetOnly(Object.keys(this.$attributes.local));
+  }
+  $resetOnly(attributes: ReadonlyArray<string>) {
     for (const key of attributes) {
       if (this.$isPersistent) {
         delete this.$attributes.local[key];
@@ -262,70 +217,78 @@ export class OpaqueModel implements OpaqueModelContract {
     return this;
   }
 
-  $setRow(data: OpaqueRow) {
-    this.$attributes.storage = (this
-      .constructor as typeof OpaqueModel).$deserialize(data);
+  $setRow(data: OpaqueAttributes) {
+    this.$attributes.storage = (this.constructor as OpaqueTable).$deserialize(data);
     return this;
   }
 
   get $ownQuery() {
-    return (this.constructor as typeof OpaqueModel).$queryFor(
-      this.$primaryKeyValue
-    );
+    return (this.constructor as OpaqueTable).query().for(this.$primaryKeyValue);
   }
 
-  static $queryFor(id: any) {
-    return (this.query() as QueryBuilder<any>).where(this.primaryKey, '==', id);
-  }
-
-  async save() {
-    return this.$saveAll();
+  save(...attributes: readonly string[] | readonly [readonly string[]]) {
+    if (attributes.length == 0) {
+      return this.$saveAll();
+    }
+    if (Array.isArray(attributes[0])) {
+      return this.$saveOnly(attributes[0]);
+    }
+    return this.$saveOnly(attributes as string[]);
   }
 
   async delete() {
-    return await this.$ownQuery.delete();
+    await (this.constructor as OpaqueTable).adapter!.delete(this.$ownQuery.$getQuery());
   }
 
-  async $saveOnly(
-    attributes: Iterable<NonNullable<keyof ModelAttributes<this>>>
-  ) {
-    const toInsert = (this.constructor as typeof OpaqueModel).$serialize(
-      [...attributes].reduce(
-        (toInsert, key) => ({
-          ...toInsert,
-          [key]: this.$getAttribute(key, { plain: true }),
-        }),
-        {}
-      )
-    );
+  async $saveOnly(attributes: ReadonlyArray<string>) {
+    const toInsert = this.$serialize(attributes);
+    // Reset before save to avoid race condition,
+    // when data is written after read, but before reset
+    this.$resetOnly(attributes);
+    const adapter = (this.constructor as OpaqueTable).adapter;
     if (this.$isPersistent) {
-      const updated = (
-        await this.$adapter.update(this.$ownQuery.$query, toInsert)
-      )[0];
-      if (updated) {
-        this.$setRow(updated);
-      }
+      await adapter.update(this.$ownQuery.$getQuery(), toInsert);
     } else {
-      this.$setRow(await this.$adapter.create(toInsert));
+      const result = await adapter.insert(toInsert);
+      if (typeof result == "object") {
+        this.$setRow(result);
+      } else {
+        this.$primaryKeyValue = result;
+      }
     }
-    return this.$resetOnly(attributes);
+    return this;
   }
 
   $saveAll() {
-    return this.$saveOnly(
-      Object.keys(this.$attributes.local) as Iterable<
-        NonNullable<keyof ModelAttributes<this>>
-      >
-    );
+    return this.$saveOnly(Object.keys(this.$attributes.local));
   }
 
-  async $setAttributesAndSave(attributes: Partial<ModelAttributes<this>>) {
+  async $setAndSaveAttributes(attributes: Partial<ModelAttributes<this>>) {
     this.$setAttributes(attributes);
-    this.$saveOnly(
-      Object.keys(attributes) as Iterable<
-        NonNullable<keyof ModelAttributes<this>>
-      >
-    );
+    await this.$saveOnly(Object.keys(attributes));
     return this;
   }
+
+  $serialize(_one?: string | ReadonlyArray<string>) {
+    const pick = Array.isArray(_one) ? _one : _one == undefined ? _one : [_one];
+
+    const attributes = pick ? this.$getAttributes(pick, { raw: true }) : this.$getAttributes({ raw: true });
+
+    return (this.constructor as OpaqueTable).$serialize(attributes);
+  }
+  $serializeAll() {
+    return (this.constructor as OpaqueTable).$serialize(this.$getAttributes({ raw: true }));
+  }
+  $serializeOnly(pick: ReadonlyArray<string>) {
+    return (this.constructor as OpaqueTable).$serialize(this.$getAttributes(pick, { raw: true }));
+  }
+  $serializeAttribute(pick: string) {
+    return (this.constructor as typeof AbstractOpaqueImplementation).$serializeAttribute(
+      pick,
+      this.$getAttribute(pick, { raw: true })
+    );
+  }
 }
+
+export type OpaqueModel = AbstractOpaqueImplementation;
+export const OpaqueModel = AbstractOpaqueImplementation as AbstractOpaqueTable;

@@ -1,8 +1,10 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testPathIgnorePatterns: [
-    "lib",
-    "old"
+  testMatch: [
+    '**/__tests__/**/*.spec.ts'
+  ],
+  coveragePathIgnorePatterns: [
+    "__tests__", "node_modules"
   ]
 };
