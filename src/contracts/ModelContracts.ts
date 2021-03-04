@@ -92,6 +92,10 @@ export interface AbstractOpaqueTable {
     this: This,
     data?: Partial<ModelAttributes<InstanceType<This>>>
   ): InstanceType<This>;
+  create<This extends AbstractOpaqueTable>(
+    this: This,
+    data?: Partial<ModelAttributes<InstanceType<This>>>
+  ): Promise<InstanceType<This>>;
   find<This extends OpaqueTable & { query(): { first(): any } }>(
     this: This,
     key: PrimaryKeyValue

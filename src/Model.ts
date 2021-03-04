@@ -79,6 +79,9 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     }
     return instance;
   }
+  static async create<This extends AbstractOpaqueTable>(this: This, data?: object) {
+    return this.make(data).save();
+  }
 
   static $fromRow<This extends AbstractOpaqueTable>(this: This, data: OpaqueAttributes) {
     const model = new this() as InstanceType<This>;
