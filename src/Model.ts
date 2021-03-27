@@ -215,8 +215,8 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     return this;
   }
 
-  $setRow(data: OpaqueAttributes) {
-    Object.setPrototypeOf(this.$attributes.chain, (this.constructor as OpaqueTable).$deserialize(data));
+  $setRow(data: OpaqueAttributes, { raw = false }: { raw?: boolean } = {}) {
+    Object.setPrototypeOf(this.$attributes.chain, raw ? data : (this.constructor as OpaqueTable).$deserialize(data));
     // this.$attributes.persistent = true;
     return this;
   }
@@ -246,7 +246,7 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     // and blank data while saving when using reactive Update
     const staging: OpaqueAttributes = Object.create(Object.getPrototypeOf(this.$attributes.chain));
     Object.assign(staging, this.$getAttributes(attributes, { raw: true }));
-    this.$setRow(staging);
+    this.$setRow(staging, { raw: true });
     // this.$attributes.chain.__proto__ = staging;
     this.$resetOnly(attributes);
     // Chain is now current -> staging -> storage
