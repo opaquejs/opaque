@@ -89,8 +89,8 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     return model;
   }
 
-  static find<This extends OpaqueTable>(this: This, key: PrimaryKeyValue) {
-    return this.query().for(key).first!();
+  static async find<This extends OpaqueTable>(this: This, key: PrimaryKeyValue) {
+    return (await this.query().for(key).first!()) as InstanceType<This>;
   }
 
   static $serializeAttribute(key: string, value: unknown) {

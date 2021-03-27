@@ -1,7 +1,7 @@
-import { PrimaryKeyValue, OpaqueTable } from "./ModelContracts";
+import { PrimaryKeyValue, OpaqueRow } from "./ModelContracts";
 
-export interface QueryBuilderInterface<Query, Model extends OpaqueTable> {
+export interface QueryBuilderInterface<Query> {
   for(row: PrimaryKeyValue): this;
   $getQuery(): Query;
-  first?(): Promise<InstanceType<Model>>;
+  first?(): Promise<OpaqueRow>;
 }

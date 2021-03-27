@@ -126,5 +126,5 @@ export interface AbstractOpaqueTable {
 
 export interface OpaqueTable extends AbstractOpaqueTable {
   adapter: AdapterInterface<any>;
-  query<This extends OpaqueTable>(this: This): QueryBuilderInterface<Parameters<This["adapter"]["read"]>[0], This>;
+  query<This extends OpaqueTable>(this: This): QueryBuilderInterface<Parameters<This["adapter"]["read"]>[0]>;
 }
