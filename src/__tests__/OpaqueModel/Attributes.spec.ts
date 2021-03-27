@@ -188,7 +188,7 @@ export class Attributes implements Test {
     expect(model.$getAttributes()).toEqual({ id: "id value", name: "name value" });
   }
 
-  findCallsQueryFind() {
+  async findCallsQueryFind() {
     // Given a Model
     const querybuilder = {
       for: jest.fn(function (this: any) {
@@ -202,7 +202,7 @@ export class Attributes implements Test {
       }
     }
     // When I call find on that Model
-    const result = Model.find("something");
+    const result = await Model.find("something");
     // Then the queries find and for method got called
     expect(querybuilder.for).toHaveBeenCalledWith("something");
     expect(querybuilder.first).toHaveBeenCalled();
