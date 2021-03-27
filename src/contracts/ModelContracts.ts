@@ -44,7 +44,7 @@ export type PrimaryKeyValue = string | number;
 
 export interface OpaqueRow {
   $schema: OpaqueSchema;
-  $attributes: AttributeObjects;
+  $attributes: { chain: OpaqueAttributes };
   $primaryKeyValue: PrimaryKeyValue;
 
   $isPersistent: Boolean;

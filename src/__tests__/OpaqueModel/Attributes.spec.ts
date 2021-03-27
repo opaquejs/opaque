@@ -209,9 +209,20 @@ export class Attributes implements Test {
     expect(result).toBe("model");
   }
 
+  async insertKeepsAttributes() {
+    const Model = await factory.Model({ id: { primaryKey: true, default: "" } });
+    const model = await Model.create({ id: "here" });
+    expect(model.id).toBe("here");
+  }
+  async updateKeepsAttributes() {
+    const model = await factory.Model({ id: { primaryKey: true, default: "" } }).create({ id: "here" });
+    await model.$setAndSaveAttributes({ id: "again" });
+    expect(model.id).toBe("again");
+  }
+
   async saveWithNoArgsCallsSaveAll() {
     // Given a model instance
-    const model = factory.Model({}).make();
+    const model = factory.Model({ id: { primaryKey: true, default: "some-id" } }).make();
     model.$saveAll = jest.fn(model.$saveAll);
     // When I call save without arguments
     await model.save();
@@ -220,7 +231,7 @@ export class Attributes implements Test {
   }
   async setAndSaveAttributesCallsBothMethods() {
     // Given a model instance
-    const model = factory.Model({ test: false }).make();
+    const model = factory.Model({ test: { primaryKey: true, default: false } }).make();
     model.$saveOnly = jest.fn(model.$saveOnly);
     model.$setAttributes = jest.fn(model.$setAttributes);
     // When I call setAndSaveAll with {test: true}

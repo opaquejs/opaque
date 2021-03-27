@@ -3,7 +3,6 @@ import {
   OpaqueSchema,
   AttributeOptionsContract,
   ModelAttributes,
-  AttributeObjects,
   GetAttributeOptions,
   SetAttributeOptions,
   OpaqueTable,
@@ -127,12 +126,12 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     }
   }
 
-  $attributes: AttributeObjects = {
-    local: {},
+  $attributes: { chain: OpaqueAttributes } = {
+    chain: Object.create(null),
   };
 
   get $isPersistent() {
-    return this.$attributes.storage instanceof Object;
+    return Object.getPrototypeOf(this.$attributes.chain) != null;
   }
   get $schema() {
     return (this.constructor as OpaqueTable).$schema;
@@ -170,11 +169,7 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
       throw new Error(`The requested attribute '${attribute}' does not exist on the model '${this.constructor.name}'!`);
     }
 
-    if (attribute in this.$attributes.local) {
-      value = this.$attributes.local[attribute];
-    } else {
-      value = this.$attributes.storage![attribute];
-    }
+    value = this.$attributes.chain[attribute];
     if (!options.raw) {
       value = (this.constructor as OpaqueTable).$schema.get(attribute)!.get(value);
     }
@@ -188,7 +183,7 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     if (!options.raw) {
       value = (this.constructor as OpaqueTable).$schema.get(attribute)!.set(value);
     }
-    this.$attributes.local[attribute] = value;
+    this.$attributes.chain[attribute] = value;
     return this;
   }
 
@@ -207,21 +202,22 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
   }
 
   $resetAll() {
-    return this.$resetOnly(Object.keys(this.$attributes.local));
+    return this.$resetOnly(Object.getOwnPropertyNames(this.$attributes.chain));
   }
   $resetOnly(attributes: ReadonlyArray<string>) {
     for (const key of attributes) {
       if (this.$isPersistent) {
-        delete this.$attributes.local[key];
+        delete this.$attributes.chain[key];
       } else {
-        this.$attributes.local[key] = this.$schema.get(key)!.default;
+        this.$attributes.chain[key] = this.$schema.get(key)!.default;
       }
     }
     return this;
   }
 
   $setRow(data: OpaqueAttributes) {
-    this.$attributes.storage = (this.constructor as OpaqueTable).$deserialize(data);
+    Object.setPrototypeOf(this.$attributes.chain, (this.constructor as OpaqueTable).$deserialize(data));
+    // this.$attributes.persistent = true;
     return this;
   }
 
@@ -244,26 +240,35 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
   }
 
   async $saveOnly(attributes: ReadonlyArray<string>) {
-    const toInsert = this.$serialize(attributes);
-    // Reset before save to avoid race condition,
+    const isPersistent = this.$isPersistent;
+    // Isolate state to avoid race condition,
     // when data is written after read, but before reset
+    // and blank data while saving when using reactive Update
+    const staging: OpaqueAttributes = Object.create(Object.getPrototypeOf(this.$attributes.chain));
+    Object.assign(staging, this.$getAttributes(attributes, { raw: true }));
+    this.$setRow(staging);
+    // this.$attributes.chain.__proto__ = staging;
     this.$resetOnly(attributes);
+    // Chain is now current -> staging -> storage
+
+    const stagingSerialized = this.$serialize(attributes);
+
     const adapter = (this.constructor as OpaqueTable).adapter;
-    if (this.$isPersistent) {
-      await adapter.update(this.$ownQuery.$getQuery(), toInsert);
+    if (isPersistent) {
+      await adapter.update(this.$ownQuery.$getQuery(), stagingSerialized);
     } else {
-      const result = await adapter.insert(toInsert);
+      const result = await adapter.insert(stagingSerialized);
       if (typeof result == "object") {
         this.$setRow(result);
       } else {
-        this.$primaryKeyValue = result;
+        staging[(this.constructor as OpaqueTable).primaryKey] = result;
       }
     }
     return this;
   }
 
   $saveAll() {
-    return this.$saveOnly(Object.keys(this.$attributes.local));
+    return this.$saveOnly(Object.getOwnPropertyNames(this.$attributes.chain));
   }
 
   async $setAndSaveAttributes(attributes: Partial<ModelAttributes<this>>) {
