@@ -1,8 +1,4 @@
-import { OpaqueQueryRootEntries } from "@opaquejs/query";
-import {
-  QueryBuilderContract,
-  QueryBuilderInterface,
-} from "@opaquejs/query-builder/src/contracts/OpaqueQueryBuilderContracts";
+import { QueryBuilderContract, QueryBuilderInterface } from "@opaquejs/query-builder/";
 import { Constructor } from "../util";
 import { AdapterInterface } from "./AdapterInterface";
 
