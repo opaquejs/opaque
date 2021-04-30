@@ -1,24 +1,31 @@
-import { getInheritedPropertyDescriptor } from "./util";
+import { Constructor, getInheritedPropertyDescriptor } from "./util";
 import {
   OpaqueSchema,
   AttributeOptionsContract,
-  ModelAttributes,
   GetAttributeOptions,
   SetAttributeOptions,
   OpaqueTable,
   OpaqueRow,
   PrimaryKeyValue,
   OpaqueAttributes,
-  AbstractOpaqueTable,
+  OpaqueTableInterface,
+  OpaqueRowInterface,
+  HasManyRelationInterface,
+  BelongsToRelationInterface,
 } from "./contracts/ModelContracts";
+import { QueryBuilder } from "@opaquejs/query-builder";
+import { BelongsToRelation } from "./Relations/BelongsTo";
+import { HasManyRelation } from "./Relations/HasManyRelation";
+import { AdapterInterface } from "./contracts/AdapterInterface";
+import { QueryBuilderInterface } from "@opaquejs/query-builder/src/contracts/OpaqueQueryBuilderContracts";
 
 export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) => <
-  M extends OpaqueRow
+  M extends OpaqueRowInterface
 >(
   model: M,
   property: string
 ) => {
-  const constructor = model.constructor as AbstractOpaqueTable;
+  const constructor = model.constructor as OpaqueTableInterface;
   constructor.$addAttribute(property, {
     ...options,
     default: ((new constructor() as unknown) as Record<string, unknown>)[property] as Type,
@@ -31,8 +38,9 @@ export function staticImplements<T>() {
   };
 }
 
-@staticImplements<AbstractOpaqueTable>()
-export class AbstractOpaqueImplementation implements OpaqueRow {
+@staticImplements<OpaqueTableInterface>()
+export class AbstractOpaqueImplementation implements OpaqueRowInterface {
+  static adapter: AdapterInterface;
   static $inheritedSchemas: Map<typeof AbstractOpaqueImplementation, OpaqueSchema> = new Map();
 
   static get primaryKey() {
@@ -71,26 +79,37 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     });
   }
 
-  static make<This extends AbstractOpaqueTable>(this: This, data?: OpaqueAttributes) {
-    const instance = new this() as InstanceType<This>;
+  static make(data?: OpaqueAttributes) {
+    const instance = new this();
     if (data) {
       (instance as AbstractOpaqueImplementation).$setAttributes(data);
     }
     return instance;
   }
-  static async create<This extends AbstractOpaqueTable>(this: This, data?: object) {
+  static async create(data?: OpaqueAttributes) {
     return this.make(data).save();
   }
 
-  static $fromRow<This extends AbstractOpaqueTable>(this: This, data: OpaqueAttributes) {
-    const model = new this() as InstanceType<This>;
+  static $fromRow(data: OpaqueAttributes) {
+    const model = new this();
     model.$setRow(data);
     model.$resetAll();
     return model;
   }
 
-  static async find<This extends OpaqueTable>(this: This, key: PrimaryKeyValue) {
-    return (await this.query().for(key).first!()) as InstanceType<This>;
+  static async find(key: PrimaryKeyValue) {
+    return await this.query().for(key).first!();
+  }
+
+  public static async findOrCreate(key: PrimaryKeyValue) {
+    return (await this.find(key)) || new this();
+  }
+
+  static $QueryConstructor() {
+    return QueryBuilder;
+  }
+  static query() {
+    return new (this.$QueryConstructor())(this as any) as QueryBuilderInterface;
   }
 
   static $serializeAttribute(key: string, value: unknown) {
@@ -153,7 +172,7 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
 
     const attributes: Record<string, unknown> = {};
     for (const attribute of pick) {
-      attributes[attribute] = this.$getAttribute(attribute as keyof ModelAttributes<this>, options);
+      attributes[attribute] = this.$getAttribute(attribute, options);
     }
     return attributes;
   }
@@ -194,7 +213,7 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     return this;
   }
 
-  reset(...attributes: ReadonlyArray<keyof ModelAttributes<this>> | [ReadonlyArray<keyof ModelAttributes<this>>]) {
+  reset(...attributes: ReadonlyArray<string> | [ReadonlyArray<string>]) {
     if (attributes.length == 0) {
       return this.$resetAll();
     }
@@ -204,7 +223,7 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
   $resetAll() {
     return this.$resetOnly(Object.getOwnPropertyNames(this.$attributes.chain));
   }
-  $resetOnly(attributes: ReadonlyArray<string>) {
+  $resetOnly(attributes: Iterable<string>) {
     for (const key of attributes) {
       if (this.$isPersistent) {
         delete this.$attributes.chain[key];
@@ -223,6 +242,14 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
 
   get $ownQuery() {
     return (this.constructor as OpaqueTable).query().for(this.$primaryKeyValue);
+  }
+
+  public get $isDirty() {
+    return Object.getOwnPropertyNames(this.$attributes.chain).length > 0;
+  }
+
+  static all() {
+    return this.query().get();
   }
 
   save(...attributes: readonly string[] | readonly [readonly string[]]) {
@@ -271,7 +298,7 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
     return this.$saveOnly(Object.getOwnPropertyNames(this.$attributes.chain));
   }
 
-  async $setAndSaveAttributes(attributes: Partial<ModelAttributes<this>>) {
+  async $setAndSaveAttributes(attributes: OpaqueAttributes) {
     this.$setAttributes(attributes);
     await this.$saveOnly(Object.keys(attributes));
     return this;
@@ -296,7 +323,21 @@ export class AbstractOpaqueImplementation implements OpaqueRow {
       this.$getAttribute(pick, { raw: true })
     );
   }
+
+  $BelongsToRelationConstructor(): Constructor<BelongsToRelationInterface> {
+    return BelongsToRelation;
+  }
+  $HasManyRelationConstructor(): Constructor<HasManyRelationInterface> {
+    return HasManyRelation;
+  }
+
+  belongsTo(foreign: OpaqueTable) {
+    return new (this.$BelongsToRelationConstructor())(this, foreign);
+  }
+  hasMany(foreign: OpaqueTable): HasManyRelationInterface {
+    return new (this.$HasManyRelationConstructor())(this, foreign);
+  }
 }
 
-export type OpaqueModel = AbstractOpaqueImplementation;
-export const OpaqueModel = AbstractOpaqueImplementation as AbstractOpaqueTable;
+export const OpaqueModel: OpaqueTable = AbstractOpaqueImplementation as any;
+export type OpaqueModel = OpaqueRow;

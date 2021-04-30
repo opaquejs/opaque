@@ -1,4 +1,9 @@
-import { QueryBuilderInterface } from "./QueryBuilderInterface";
+import { OpaqueQueryRootEntries } from "@opaquejs/query";
+import {
+  QueryBuilderContract,
+  QueryBuilderInterface,
+} from "@opaquejs/query-builder/src/contracts/OpaqueQueryBuilderContracts";
+import { Constructor } from "../util";
 import { AdapterInterface } from "./AdapterInterface";
 
 export type OpaqueSchema = Map<string, AttributeOptionsContract<any>>;
@@ -42,13 +47,52 @@ export interface SetAttributeOptions extends AccessAttributeOptions {}
 
 export type PrimaryKeyValue = string | number;
 
-export interface OpaqueRow {
+export interface OpaqueRowInterface {
   $schema: OpaqueSchema;
   $attributes: { chain: OpaqueAttributes };
   $primaryKeyValue: PrimaryKeyValue;
 
   $isPersistent: Boolean;
+  $isDirty: Boolean;
   $hasAttribute(name: string): Boolean;
+  $getAttributes(pick: string[], options?: GetAttributeOptions): OpaqueAttributes;
+  $getAttributes(options?: GetAttributeOptions): OpaqueAttributes;
+  $getAttribute(name: string, options?: GetAttributeOptions): unknown;
+  $setAttributes(data: OpaqueAttributes, options?: SetAttributeOptions): this;
+  $setAttribute(name: string, value: unknown, options?: SetAttributeOptions): this;
+
+  reset(): this;
+  reset(attributes: ReadonlyArray<string>): this;
+  reset(...attributes: ReadonlyArray<string>): this;
+  $resetAll(): this;
+  $resetOnly(attributes: Iterable<string>): this;
+
+  $setRow(data: OpaqueAttributes): this;
+
+  save(): Promise<this>;
+  save(attributes: ReadonlyArray<string>): Promise<this>;
+  save(...attributes: ReadonlyArray<string>): Promise<this>;
+  $saveAll(): Promise<this>;
+  $saveOnly(attributes: ReadonlyArray<string>): Promise<this>;
+
+  $setAndSaveAttributes(data: OpaqueAttributes): Promise<this>;
+
+  delete(): Promise<void>;
+
+  $serialize(): OpaqueAttributes;
+  $serialize(pick: ReadonlyArray<string>): OpaqueAttributes;
+  $serialize(pick: string): unknown;
+  $serializeAll(): OpaqueAttributes;
+  $serializeOnly(pick: ReadonlyArray<string>): OpaqueAttributes;
+  $serializeAttribute(pick: string): unknown;
+
+  // Relations
+  $BelongsToRelationConstructor(): Constructor<BelongsToRelationInterface>;
+  $HasManyRelationConstructor(): Constructor<HasManyRelationInterface>;
+  belongsTo(model: OpaqueTable): BelongsToRelationInterface;
+  hasMany(model: OpaqueTable): HasManyRelationInterface;
+}
+export interface OpaqueRow extends OpaqueRowInterface {
   $getAttributes(pick: (keyof ModelAttributes<this>)[], options?: GetAttributeOptions): OpaqueAttributes;
   $getAttributes(options?: GetAttributeOptions): OpaqueAttributes;
   $getAttribute(name: keyof ModelAttributes<this>, options?: GetAttributeOptions): unknown;
@@ -59,51 +103,95 @@ export interface OpaqueRow {
     options?: SetAttributeOptions
   ): this;
 
-  reset(): this;
   reset(attributes: ReadonlyArray<keyof ModelAttributes<this>>): this;
   reset(...attributes: ReadonlyArray<keyof ModelAttributes<this>>): this;
-  $resetAll(): this;
-  $resetOnly(attributes: Iterable<string>): this;
+  $resetOnly(attributes: Iterable<keyof ModelAttributes<this>>): this;
 
-  $setRow(data: OpaqueAttributes): this;
-
-  save(): Promise<this>;
   save(attributes: ReadonlyArray<keyof ModelAttributes<this>>): Promise<this>;
   save(...attributes: ReadonlyArray<keyof ModelAttributes<this>>): Promise<this>;
-  $saveAll(): Promise<this>;
   $saveOnly(attributes: ReadonlyArray<keyof ModelAttributes<this>>): Promise<this>;
 
   $setAndSaveAttributes(data: Partial<ModelAttributes<this>>): Promise<this>;
 
-  delete(): Promise<void>;
-
   $serialize(): OpaqueAttributes;
   $serialize(pick: ReadonlyArray<keyof ModelAttributes<this>>): OpaqueAttributes;
   $serialize(pick: keyof ModelAttributes<this>): unknown;
-  $serializeAll(): OpaqueAttributes;
-  $serializeOnly(pick: ReadonlyArray<keyof ModelAttributes<this>>): OpaqueAttributes;
   $serializeAttribute(pick: keyof ModelAttributes<this>): unknown;
+
+  // Relations
+  belongsTo<Local extends OpaqueRow, Foreign extends OpaqueTable>(
+    model: Foreign
+  ): BelongsToRelationContract<Local, Foreign>;
+  hasMany<Foreign extends OpaqueTable>(model: Foreign): HasManyRelationContract<Foreign>;
 }
 
-export interface AbstractOpaqueTable {
-  new (): OpaqueRow;
-  primaryKey: string;
-  make<This extends AbstractOpaqueTable>(
-    this: This,
-    data?: Partial<ModelAttributes<InstanceType<This>>>
-  ): InstanceType<This>;
-  create<This extends AbstractOpaqueTable>(
-    this: This,
-    data?: Partial<ModelAttributes<InstanceType<This>>>
-  ): Promise<InstanceType<This>>;
-  find<This extends OpaqueTable & { query(): { first(): any } }>(
-    this: This,
-    key: PrimaryKeyValue
-  ): Promise<InstanceType<This>>;
+// Belongs to
+export interface BelongsToRelationInterface {
+  exec(): Promise<OpaqueRowInterface>;
+  query(): QueryBuilderInterface;
+  withDefault(resolver: () => OpaqueRowInterface): this;
+  associate(model: OpaqueRowInterface): OpaqueRowInterface;
+}
+export interface BelongsToRelationStaticContract {
+  new <Local extends OpaqueRow, Foreign extends OpaqueTable>(
+    current: Local,
+    foreign: Foreign
+  ): BelongsToRelationContract<Local, Foreign>;
+}
+export interface BelongsToRelationContract<Local extends OpaqueRow, Foreign extends OpaqueTable>
+  extends BelongsToRelationInterface {
+  exec(): Promise<InstanceType<Foreign>>;
+  query(): QueryBuilderContract<Foreign>;
+  withDefault(resolver: () => InstanceType<Foreign>): this;
+  associate(model: InstanceType<Foreign>): Local;
+}
 
-  $fromRow<This extends AbstractOpaqueTable>(this: This, data?: OpaqueAttributes): InstanceType<This>;
+// Has many
+export interface HasManyRelationInterface {
+  exec(): Promise<OpaqueRowInterface[]>;
+  make(attributes?: OpaqueAttributes): OpaqueRowInterface;
+  create(attributes?: OpaqueAttributes): Promise<OpaqueRowInterface>;
+}
+export interface HasManyRelationStaticContract {
+  new <Foreign extends OpaqueTable>(current: OpaqueRow, foreign: Foreign): HasManyRelationContract<Foreign>;
+}
+export interface HasManyRelationContract<Foreign extends OpaqueTable> extends HasManyRelationInterface {
+  query(): QueryBuilderContract<Foreign>;
+  exec(): Promise<InstanceType<Foreign>[]>;
+  make(attributes?: Partial<ModelAttributes<InstanceType<Foreign>>>): InstanceType<Foreign>;
+  create(attributes?: Partial<ModelAttributes<InstanceType<Foreign>>>): Promise<InstanceType<Foreign>>;
+}
+
+export interface OpaqueTableInterface {
+  new (): OpaqueRowInterface;
+  adapter: AdapterInterface<any>;
+  primaryKey: string;
+  make(data?: OpaqueAttributes): OpaqueRowInterface;
+  create(data?: OpaqueAttributes): Promise<OpaqueRowInterface>;
+  find(key: PrimaryKeyValue): Promise<OpaqueRowInterface>;
+  findOrCreate(key: PrimaryKeyValue): Promise<OpaqueRowInterface>;
+
+  $fromRow(data?: OpaqueAttributes): OpaqueRowInterface;
   $schema: Map<string, AttributeOptionsContract<unknown>>;
   $addAttribute<Type>(name: string, options?: Partial<AttributeOptionsContract<Type>>): void;
+  $deserialize(data: OpaqueAttributes): OpaqueAttributes;
+  $deserializeAttribute(key: keyof OpaqueAttributes, value: unknown): unknown;
+  $serialize(data: OpaqueAttributes): OpaqueAttributes;
+  $serializeAttribute(key: string, value: unknown): unknown;
+  $QueryConstructor(): Constructor<QueryBuilderInterface>;
+  query(): QueryBuilderInterface;
+  all(): Promise<OpaqueRowInterface[]>;
+}
+export interface OpaqueTable extends OpaqueTableInterface {
+  make<This extends OpaqueTable>(this: This, data?: Partial<ModelAttributes<InstanceType<This>>>): InstanceType<This>;
+  create<This extends OpaqueTable>(
+    this: This,
+    data?: Partial<ModelAttributes<InstanceType<This>>>
+  ): Promise<InstanceType<This>>;
+  find<This extends OpaqueTable>(this: This, key: PrimaryKeyValue): Promise<InstanceType<This>>;
+  findOrCreate<This extends OpaqueTable>(this: This, key: PrimaryKeyValue): Promise<InstanceType<This>>;
+
+  $fromRow<This extends OpaqueTable>(this: This, data?: OpaqueAttributes): InstanceType<This>;
   $deserialize<This extends OpaqueTable>(
     this: This,
     data: OpaqueAttributes
@@ -122,9 +210,10 @@ export interface AbstractOpaqueTable {
     key: Key,
     value: ModelAttributes<InstanceType<This>>[Key]
   ): unknown;
+  query<This extends OpaqueTable>(this: This): QueryBuilderContract<This>;
+  all<This extends OpaqueTable>(this: This): Promise<InstanceType<This>[]>;
 }
 
-export interface OpaqueTable extends AbstractOpaqueTable {
-  adapter: AdapterInterface<any>;
-  query<This extends OpaqueTable>(this: This): QueryBuilderInterface<Parameters<This["adapter"]["read"]>[0]>;
+interface Qquery<Q> {
+  model: Q;
 }
