@@ -17,7 +17,7 @@ import { QueryBuilder } from "@opaquejs/query-builder";
 import { BelongsToRelation } from "./Relations/BelongsTo";
 import { HasManyRelation } from "./Relations/HasManyRelation";
 import { AdapterInterface } from "./contracts/AdapterInterface";
-import { QueryBuilderInterface } from "@opaquejs/query-builder/src/contracts/OpaqueQueryBuilderContracts";
+import { QueryBuilderInterface } from "@opaquejs/query-builder";
 
 export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) => <
   M extends OpaqueRowInterface

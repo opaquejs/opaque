@@ -1,7 +1,6 @@
-import { AttributeOptionsContract, OpaqueTable, OpaqueRow } from "../../contracts/ModelContracts";
+import { AttributeOptionsContract, OpaqueTable } from "../../contracts/ModelContracts";
 import { NoOpAdapter } from "../../NoOpAdapter";
 import { OpaqueModel, staticImplements } from "../../Model";
-import { QueryBuilderInterface } from "../../contracts/QueryBuilderInterface";
 
 class TestAdapter extends NoOpAdapter {
   public insert = jest.fn(super.insert);
@@ -10,13 +9,13 @@ class TestAdapter extends NoOpAdapter {
   public read = jest.fn(super.read);
 }
 
-export const testQueryBuilder: QueryBuilderInterface<"query"> = {
+export const testQueryBuilder: any = {
   for: jest.fn((key: any) => testQueryBuilder),
   $getQuery: jest.fn(() => "query"),
 };
 
 @staticImplements<OpaqueTable>()
-export class NoOpModel extends OpaqueModel implements OpaqueRow {
+export class NoOpModel extends OpaqueModel {
   static adapter = new TestAdapter();
   static query() {
     return testQueryBuilder;
