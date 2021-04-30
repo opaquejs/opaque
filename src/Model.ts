@@ -13,11 +13,11 @@ import {
   HasManyRelationInterface,
   BelongsToRelationInterface,
 } from "./contracts/ModelContracts";
-import { QueryBuilder } from "@opaquejs/query-builder";
 import { BelongsToRelation } from "./Relations/BelongsTo";
 import { HasManyRelation } from "./Relations/HasManyRelation";
 import { AdapterInterface } from "./contracts/AdapterInterface";
-import { QueryBuilderInterface } from "@opaquejs/query-builder";
+import { QueryBuilderInterface } from "./contracts/QueryBuilderContracts";
+import { QueryBuilder } from "./QueryBuilder";
 
 export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) => <
   M extends OpaqueRowInterface
@@ -105,7 +105,7 @@ export class AbstractOpaqueImplementation implements OpaqueRowInterface {
     return (await this.find(key)) || new this();
   }
 
-  static $QueryConstructor() {
+  static $QueryConstructor(): any {
     return QueryBuilder;
   }
   static query() {

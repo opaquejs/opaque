@@ -1,6 +1,6 @@
-import { QueryBuilderContract, QueryBuilderInterface } from "@opaquejs/query-builder/";
 import { Constructor } from "../util";
 import { AdapterInterface } from "./AdapterInterface";
+import { QueryBuilderContract, QueryBuilderInterface } from "./QueryBuilderContracts";
 
 export type OpaqueSchema = Map<string, AttributeOptionsContract<any>>;
 
