@@ -1,10 +1,11 @@
 import { GetAttributeOptions, SetAttributeOptions } from "../../contracts/ModelContracts";
 import factory, { NoOpModel } from "../helpers/factory";
 import { attribute } from "../../Model";
-import { Example, example, runAsTest, Test } from "@opaquejs/testing";
+import { Example, example, inject } from "@opaquejs/testing";
+import { runWithJest } from "@opaquejs/testing/lib/jest";
 
-@runAsTest()
-export class Attributes implements Test {
+@runWithJest()
+export class Attributes {
   defaultAttributesAreSet() {
     // Given a model with a title (default to 'title') and a description (default to 'description')
     const Model = factory.Model({ title: "title", description: "description" });
@@ -26,7 +27,7 @@ export class Attributes implements Test {
 
   @example({}, "3€")
   @example({ raw: true }, "3")
-  getterWorks(options: Example<GetAttributeOptions>, result: Example<string>) {
+  getterWorks(@inject() options: Example<GetAttributeOptions>, @inject() result: Example<string>) {
     // Given an item with the price attribute with a getter appending '€'
     const item = factory
       .Model({
@@ -41,7 +42,7 @@ export class Attributes implements Test {
   }
   @example({}, "3")
   @example({ raw: true }, "3€")
-  setterWorks(options: Example<SetAttributeOptions>, result: Example<string>) {
+  setterWorks(@inject() options: Example<SetAttributeOptions>, @inject() result: Example<string>) {
     // Given an item with the price attribute with a setter removing '€'
     const item = factory
       .Model({

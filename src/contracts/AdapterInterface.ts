@@ -1,9 +1,9 @@
 import { NormalizedQuery } from "@opaquejs/query";
-import { OpaqueAttributes, PrimaryKeyValue } from "./ModelContracts";
+import { OpaqueAttributes, OpaqueTableInterface, PrimaryKeyValue } from "./ModelContracts";
 
 export interface AdapterInterface<T = NormalizedQuery> {
-  insert(data: OpaqueAttributes): Promise<PrimaryKeyValue | OpaqueAttributes>;
-  update(query: T, data: OpaqueAttributes): Promise<void>;
-  delete(query: T): Promise<void>;
-  read(query: T): Promise<OpaqueAttributes[]>;
+  insert(model: OpaqueTableInterface, data: OpaqueAttributes): Promise<PrimaryKeyValue | OpaqueAttributes>;
+  update(model: OpaqueTableInterface, query: T, data: OpaqueAttributes): Promise<void>;
+  delete(model: OpaqueTableInterface, query: T): Promise<void>;
+  read(model: OpaqueTableInterface, query: T): Promise<OpaqueAttributes[]>;
 }

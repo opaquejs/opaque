@@ -19,18 +19,15 @@ import { AdapterInterface } from "./contracts/AdapterInterface";
 import { QueryBuilderInterface } from "./contracts/QueryBuilderContracts";
 import { QueryBuilder } from "./QueryBuilder";
 
-export const attribute = <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) => <
-  M extends OpaqueRowInterface
->(
-  model: M,
-  property: string
-) => {
-  const constructor = model.constructor as OpaqueTableInterface;
-  constructor.$addAttribute(property, {
-    ...options,
-    default: ((new constructor() as unknown) as Record<string, unknown>)[property] as Type,
-  });
-};
+export const attribute =
+  <Type>(options: Partial<AttributeOptionsContract<Type> & { default: never }> = {}) =>
+  <M extends OpaqueRowInterface>(model: M, property: string) => {
+    const constructor = model.constructor as OpaqueTableInterface;
+    constructor.$addAttribute(property, {
+      ...options,
+      default: (new constructor() as unknown as Record<string, unknown>)[property] as Type,
+    });
+  };
 
 export function staticImplements<T>() {
   return <U extends T>(constructor: U) => {
@@ -263,7 +260,10 @@ export class AbstractOpaqueImplementation implements OpaqueRowInterface {
   }
 
   async delete() {
-    await (this.constructor as OpaqueTable).adapter!.delete(this.$ownQuery.$getQuery());
+    await (this.constructor as OpaqueTable).adapter!.delete(
+      this.constructor as OpaqueTableInterface,
+      this.$ownQuery.$getQuery()
+    );
   }
 
   async $saveOnly(attributes: ReadonlyArray<string>) {
@@ -282,9 +282,9 @@ export class AbstractOpaqueImplementation implements OpaqueRowInterface {
 
     const adapter = (this.constructor as OpaqueTable).adapter;
     if (isPersistent) {
-      await adapter.update(this.$ownQuery.$getQuery(), stagingSerialized);
+      await adapter.update(this.constructor as OpaqueTableInterface, this.$ownQuery.$getQuery(), stagingSerialized);
     } else {
-      const result = await adapter.insert(stagingSerialized);
+      const result = await adapter.insert(this.constructor as OpaqueTableInterface, stagingSerialized);
       if (typeof result == "object") {
         this.$setRow(result);
       } else {

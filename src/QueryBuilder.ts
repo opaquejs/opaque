@@ -145,13 +145,13 @@ export class QueryBuilderImplementation implements QueryBuilderInterface {
   }
 
   async get() {
-    return this.$hydrate(await this.model.adapter.read(this.$query));
+    return this.$hydrate(await this.model.adapter.read(this.model, this.$query));
   }
   async update(data: OpaqueAttributes) {
-    return await this.model.adapter.update(this.$query, data);
+    return await this.model.adapter.update(this.model, this.$query, data);
   }
   async delete() {
-    return await this.model.adapter.delete(this.$query);
+    return await this.model.adapter.delete(this.model, this.$query);
   }
 
   async first() {

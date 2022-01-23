@@ -1,8 +1,8 @@
 import factory from "../helpers/factory";
-import { runAsTest, Test } from "@opaquejs/testing";
+import { runWithJest } from "@opaquejs/testing/lib/jest";
 
-@runAsTest()
-export class Static implements Test {
+@runWithJest()
+export class Static {
   async creating() {
     // Given a model with a title (default to 'title') and a description (default to 'description')
     const Model = factory.Model({ title: { primaryKey: true, default: "title" }, description: "description" });

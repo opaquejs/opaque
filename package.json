@@ -36,5 +36,8 @@
     "bugs": {
         "url": "https://github.com/opaquejs/opaque/issues"
     },
-    "homepage": "https://github.com/opaquejs/opaque#readme"
+    "homepage": "https://github.com/opaquejs/opaque#readme",
+    "dependencies": {
+        "@opaquejs/query-engine": "^0.3.7"
+    }
 }
