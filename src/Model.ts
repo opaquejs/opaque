@@ -95,7 +95,10 @@ export class AbstractOpaqueImplementation implements OpaqueRowInterface {
   }
 
   static async find(key: PrimaryKeyValue) {
-    return await this.query().for(key).first!();
+    return await this.query().for(key).first();
+  }
+  static async first() {
+    return await this.query().first();
   }
 
   public static async findOrCreate(key: PrimaryKeyValue) {

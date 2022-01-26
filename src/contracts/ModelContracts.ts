@@ -165,6 +165,7 @@ export interface OpaqueTableInterface {
   make(data?: OpaqueAttributes): OpaqueRowInterface;
   create(data?: OpaqueAttributes): Promise<OpaqueRowInterface>;
   find(key: PrimaryKeyValue): Promise<OpaqueRowInterface>;
+  first(): Promise<OpaqueRowInterface>;
   findOrCreate(key: PrimaryKeyValue): Promise<OpaqueRowInterface>;
 
   $fromRow(data?: OpaqueAttributes): OpaqueRowInterface;
@@ -178,13 +179,20 @@ export interface OpaqueTableInterface {
   query(): QueryBuilderInterface;
   all(): Promise<OpaqueRowInterface[]>;
 }
-export interface OpaqueTable extends OpaqueTableInterface {
+export interface OpaqueTable {
+  new (): OpaqueRow;
+  adapter: AdapterInterface<any>;
+  primaryKey: string;
+  $schema: Map<string, AttributeOptionsContract<unknown>>;
+  $addAttribute<Type>(name: string, options?: Partial<AttributeOptionsContract<Type>>): void;
+  $QueryConstructor(): Constructor<QueryBuilderInterface>;
   make<This extends OpaqueTable>(this: This, data?: Partial<ModelAttributes<InstanceType<This>>>): InstanceType<This>;
   create<This extends OpaqueTable>(
     this: This,
     data?: Partial<ModelAttributes<InstanceType<This>>>
   ): Promise<InstanceType<This>>;
   find<This extends OpaqueTable>(this: This, key: PrimaryKeyValue): Promise<InstanceType<This>>;
+  first<This extends OpaqueTable>(this: This): Promise<InstanceType<This>>;
   findOrCreate<This extends OpaqueTable>(this: This, key: PrimaryKeyValue): Promise<InstanceType<This>>;
 
   $fromRow<This extends OpaqueTable>(this: This, data?: OpaqueAttributes): InstanceType<This>;
@@ -208,8 +216,4 @@ export interface OpaqueTable extends OpaqueTableInterface {
   ): unknown;
   query<This extends OpaqueTable>(this: This): QueryBuilderContract<This>;
   all<This extends OpaqueTable>(this: This): Promise<InstanceType<This>[]>;
-}
-
-interface Qquery<Q> {
-  model: Q;
 }

@@ -145,7 +145,7 @@ Fetch only the first task. This returns a single task instead of an array.
 ```ts
 import { Task } from "./Task";
 
-const task = await Task.find(12);
+const task = await Task.query().first();
 ```
 
 ### using the query builder
