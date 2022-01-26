@@ -1,6 +1,6 @@
 {
     "name": "@opaquejs/opaque",
-    "version": "0.19.2",
+    "version": "0.19.3",
     "description": "A client-side Javascript ORM",
     "main": "lib/index.js",
     "files": [
