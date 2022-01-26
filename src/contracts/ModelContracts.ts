@@ -86,7 +86,7 @@ export interface OpaqueRowInterface {
   $BelongsToRelationConstructor(): Constructor<BelongsToRelationInterface>;
   $HasManyRelationConstructor(): Constructor<HasManyRelationInterface>;
   belongsTo(model: OpaqueTable): BelongsToRelationInterface;
-  hasMany(model: OpaqueTable): HasManyRelationInterface;
+  hasMany(model: OpaqueTable, options?: Partial<HasManyRelationOptions>): HasManyRelationInterface;
 }
 export interface OpaqueRow extends OpaqueRowInterface {
   $getAttributes(pick: (keyof ModelAttributes<this>)[], options?: GetAttributeOptions): OpaqueAttributes;
@@ -118,7 +118,10 @@ export interface OpaqueRow extends OpaqueRowInterface {
   belongsTo<Local extends OpaqueRow, Foreign extends OpaqueTable>(
     model: Foreign
   ): BelongsToRelationContract<Local, Foreign>;
-  hasMany<Foreign extends OpaqueTable>(model: Foreign): HasManyRelationContract<Foreign>;
+  hasMany<Foreign extends OpaqueTable>(
+    model: Foreign,
+    options?: Partial<HasManyRelationOptions>
+  ): HasManyRelationContract<Foreign>;
 }
 
 // Belongs to
@@ -156,6 +159,10 @@ export interface HasManyRelationContract<Foreign extends OpaqueTable> extends Ha
   exec(): Promise<InstanceType<Foreign>[]>;
   make(attributes?: Partial<ModelAttributes<InstanceType<Foreign>>>): InstanceType<Foreign>;
   create(attributes?: Partial<ModelAttributes<InstanceType<Foreign>>>): Promise<InstanceType<Foreign>>;
+}
+export interface HasManyRelationOptions {
+  foreignKey: string;
+  localKey: string;
 }
 
 export interface OpaqueTableInterface {

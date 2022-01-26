@@ -6,17 +6,32 @@ import {
   OpaqueRowInterface,
   OpaqueTable,
   OpaqueTableInterface,
+  HasManyRelationOptions,
 } from "../contracts/ModelContracts";
 import { camelize } from "./inflector";
 import { AbstractOpaqueImplementation } from "../Model";
 
 export class HasManyRelationImplementation implements HasManyRelationInterface {
-  constructor(public currentModel: OpaqueRowInterface, public model: OpaqueTableInterface) {}
+  constructor(
+    public currentModel: OpaqueRowInterface,
+    public model: OpaqueTableInterface,
+    public options: Partial<HasManyRelationOptions> = {}
+  ) {}
+
+  protected resolveOption<K extends keyof HasManyRelationOptions>(key: K): HasManyRelationOptions[K] {
+    const defaultOptions: {
+      [key in keyof HasManyRelationOptions]: () => HasManyRelationOptions[key];
+    } = {
+      foreignKey: () => camelize([this.currentModel.constructor.name, "id"]),
+      localKey: () => (this.currentModel.constructor as OpaqueTableInterface).primaryKey,
+    };
+    return (this.options[key] || defaultOptions[key]()) as HasManyRelationOptions[K];
+  }
 
   query() {
     return this.model
       .query()
-      .where(camelize([this.currentModel.constructor.name, "id"]), "==", this.currentModel.$primaryKeyValue);
+      .where(this.resolveOption("foreignKey"), "==", this.currentModel.$getAttribute(this.resolveOption("localKey")));
   }
 
   async exec() {
@@ -26,21 +41,24 @@ export class HasManyRelationImplementation implements HasManyRelationInterface {
   make(attributes?: OpaqueAttributes): OpaqueRowInterface {
     return this.model.make({
       ...attributes,
-      [camelize([this.currentModel.constructor.name, "id"])]: this.currentModel.$primaryKeyValue,
+      [this.resolveOption("foreignKey")]: this.currentModel.$getAttribute(this.resolveOption("localKey")),
     });
   }
 
   create(attributes?: OpaqueAttributes): Promise<OpaqueRowInterface> {
     return this.model.create({
       ...attributes,
-      [camelize([this.currentModel.constructor.name, "id"])]: this.currentModel.$primaryKeyValue,
+      [this.resolveOption("foreignKey")]: this.currentModel.$getAttribute(this.resolveOption("localKey")),
     });
   }
 
   save(model: AbstractOpaqueImplementation) {
-    model.$setAttribute(camelize([this.currentModel.constructor.name, "id"]), this.currentModel.$primaryKeyValue);
+    model.$setAttribute(
+      this.resolveOption("foreignKey"),
+      this.currentModel.$getAttribute(this.resolveOption("localKey"))
+    );
     if (model.$isPersistent) {
-      return model.$saveOnly([camelize([this.currentModel.constructor.name, "id"])]);
+      return model.$saveOnly([this.resolveOption("foreignKey")]);
     } else {
       return model.save();
     }

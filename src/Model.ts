@@ -11,6 +11,7 @@ import {
   OpaqueTableInterface,
   OpaqueRowInterface,
   HasManyRelationInterface,
+  HasManyRelationOptions,
   BelongsToRelationInterface,
 } from "./contracts/ModelContracts";
 import { BelongsToRelation } from "./Relations/BelongsTo";
@@ -337,8 +338,8 @@ export class AbstractOpaqueImplementation implements OpaqueRowInterface {
   belongsTo(foreign: OpaqueTable) {
     return new (this.$BelongsToRelationConstructor())(this, foreign);
   }
-  hasMany(foreign: OpaqueTable): HasManyRelationInterface {
-    return new (this.$HasManyRelationConstructor())(this, foreign);
+  hasMany(foreign: OpaqueTable, options?: Partial<HasManyRelationOptions>): HasManyRelationInterface {
+    return new (this.$HasManyRelationConstructor())(this, foreign, options);
   }
 }
 
