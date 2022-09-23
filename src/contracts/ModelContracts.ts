@@ -85,7 +85,7 @@ export interface OpaqueRowInterface {
   // Relations
   $BelongsToRelationConstructor(): Constructor<BelongsToRelationInterface>;
   $HasManyRelationConstructor(): Constructor<HasManyRelationInterface>;
-  belongsTo(model: OpaqueTable): BelongsToRelationInterface;
+  belongsTo(model: OpaqueTable, options?: Partial<BelongsToRelationOptions>): BelongsToRelationInterface;
   hasMany(model: OpaqueTable, options?: Partial<HasManyRelationOptions>): HasManyRelationInterface;
 }
 export interface OpaqueRow extends OpaqueRowInterface {
@@ -116,7 +116,8 @@ export interface OpaqueRow extends OpaqueRowInterface {
 
   // Relations
   belongsTo<Local extends OpaqueRow, Foreign extends OpaqueTable>(
-    model: Foreign
+    model: Foreign,
+    options?: Partial<BelongsToRelationOptions>
   ): BelongsToRelationContract<Local, Foreign>;
   hasMany<Foreign extends OpaqueTable>(
     model: Foreign,
