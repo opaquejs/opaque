@@ -1,6 +1,7 @@
 import {
   BelongsToRelationContract,
   BelongsToRelationInterface,
+  BelongsToRelationOptions,
   BelongsToRelationStaticContract,
   OpaqueRow,
   OpaqueRowInterface,
@@ -11,7 +12,20 @@ import { camelize } from "./inflector";
 
 export class BelongsToRelationImplementation implements BelongsToRelationInterface {
   public default: () => OpaqueRow | undefined = () => undefined;
-  constructor(public currentModel: OpaqueRowInterface, public model: OpaqueTableInterface) {}
+  constructor(
+    public currentModel: OpaqueRowInterface,
+    public model: OpaqueTableInterface,
+    public options: Partial<BelongsToRelationOptions> = {}
+  ) {}
+
+  protected resolveOption<K extends keyof BelongsToRelationOptions>(key: K): BelongsToRelationOptions[K] {
+    const defaultOptions: {
+      [key in keyof BelongsToRelationOptions]: () => BelongsToRelationOptions[key];
+    } = {
+      localKey: () => camelize([this.currentModel.constructor.name, "id"]),
+    };
+    return (this.options[key] || defaultOptions[key]()) as BelongsToRelationOptions[K];
+  }
 
   withDefault(default_model: () => OpaqueRow) {
     this.default = default_model;
@@ -19,12 +33,12 @@ export class BelongsToRelationImplementation implements BelongsToRelationInterfa
   }
 
   associate(model: OpaqueRowInterface) {
-    this.currentModel.$setAttribute(camelize([this.model.name, "id"]), model.$primaryKeyValue);
+    this.currentModel.$setAttribute(this.resolveOption("localKey"), model.$primaryKeyValue);
     return this.currentModel;
   }
 
   query() {
-    return this.model.query().for(this.currentModel.$getAttribute(camelize([this.model.name, "id"])));
+    return this.model.query().for(this.currentModel.$getAttribute(this.resolveOption("localKey")));
   }
 
   async exec() {

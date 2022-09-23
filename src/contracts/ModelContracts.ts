@@ -164,6 +164,9 @@ export interface HasManyRelationOptions {
   foreignKey: string;
   localKey: string;
 }
+export interface BelongsToRelationOptions {
+  localKey: string;
+}
 
 export interface OpaqueTableInterface {
   new (): OpaqueRowInterface;
